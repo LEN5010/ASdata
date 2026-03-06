@@ -15,17 +15,17 @@
 
 ## 当前概况
 
-- source_user_count：`31609`
+- source_user_count：`31415`
 - 最大后续到场阈值：`19`
 - 最大后续有效到场阈值：`19`
-- 黑名单过滤行数：`25651`
+- 黑名单过滤行数：`28193`
 - 非法 UID 过滤行数：`5`
 
 ## 关键读法
 
-- `嘉然`：post>=1 `0.6343`，post>=2 `0.4798`，post>=3 `0.3772`，post>=5 `0.2446`；post_active>=1 `0.5265`，post_active>=2 `0.3708`，post_active>=3 `0.2783`
-- `乃琳`：post>=1 `0.5908`，post>=2 `0.4136`，post>=3 `0.305`，post>=5 `0.1737`；post_active>=1 `0.4807`，post_active>=2 `0.3148`，post_active>=3 `0.2236`
-- `贝拉`：post>=1 `0.2019`，post>=2 `0.1041`，post>=3 `0.0636`，post>=5 `0.0236`；post_active>=1 `0.159`，post_active>=2 `0.0789`，post_active>=3 `0.0462`
+- `嘉然`：post>=1 `0.6342`，post>=2 `0.4795`，post>=3 `0.3771`，post>=5 `0.2443`；post_active>=1 `0.5263`，post_active>=2 `0.3709`，post_active>=3 `0.2784`
+- `乃琳`：post>=1 `0.5893`，post>=2 `0.4124`，post>=3 `0.304`，post>=5 `0.173`；post_active>=1 `0.4794`，post_active>=2 `0.3137`，post_active>=3 `0.2229`
+- `贝拉`：post>=1 `0.2005`，post>=2 `0.1032`，post>=3 `0.0631`，post>=5 `0.0236`；post_active>=1 `0.158`，post_active>=2 `0.0784`，post_active>=3 `0.046`
 
 ## 非零阈值上限
 

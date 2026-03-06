@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1180" height="720" viewBox="0 0 1180 720">
 <rect width="1180" height="720" fill="white"/>
 <text x="590.0" y="36" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#1f2328">乃琳_鸣潮 人群三人后续承接解释性阈值</text>
-<text x="590.0" y="60" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="12" font-weight="normal" text-anchor="middle" fill="#57606a">source_user_count=31609 ｜ 口径：首次进入 source 后的 post_source 场次</text>
+<text x="590.0" y="60" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="12" font-weight="normal" text-anchor="middle" fill="#57606a">source_user_count=31415 ｜ 口径：首次进入 source 后的 post_source 场次</text>
 <text x="110" y="70" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="16" font-weight="bold" text-anchor="start" fill="#1f2328">后续到场阈值（1 / 2 / 3 / 5 场）</text>
 <line x1="110" y1="90.0" x2="1130" y2="90.0" stroke="#d0d7de" stroke-width="1" stroke-dasharray="4 4"/>
 <text x="100" y="94.0" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="end" fill="#57606a">100.0%</text>
@@ -23,22 +23,22 @@
 <text x="790.0" y="330" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="middle" fill="#57606a">3</text>
 <line x1="1130.0" y1="90" x2="1130.0" y2="310" stroke="#eef2f6" stroke-width="1"/>
 <text x="1130.0" y="330" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="middle" fill="#57606a">5</text>
-<polyline fill="none" stroke="#5B8FF9" stroke-width="3" points="110.0,170.454 450.0,204.44400000000002 790.0,227.016 1130.0,256.188"/>
-<circle cx="110.0" cy="170.454" r="3.5" fill="#5B8FF9"/>
-<circle cx="450.0" cy="204.44400000000002" r="3.5" fill="#5B8FF9"/>
-<circle cx="790.0" cy="227.016" r="3.5" fill="#5B8FF9"/>
-<circle cx="1130.0" cy="256.188" r="3.5" fill="#5B8FF9"/>
-<text x="1142.0" y="260.188" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="12" font-weight="normal" text-anchor="start" fill="#5B8FF9">嘉然</text>
-<polyline fill="none" stroke="#61DDAA" stroke-width="3" points="110.0,180.024 450.0,219.008 790.0,242.9 1130.0,271.786"/>
-<circle cx="110.0" cy="180.024" r="3.5" fill="#61DDAA"/>
-<circle cx="450.0" cy="219.008" r="3.5" fill="#61DDAA"/>
-<circle cx="790.0" cy="242.9" r="3.5" fill="#61DDAA"/>
-<circle cx="1130.0" cy="271.786" r="3.5" fill="#61DDAA"/>
-<text x="1142.0" y="275.786" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="12" font-weight="normal" text-anchor="start" fill="#61DDAA">乃琳</text>
-<polyline fill="none" stroke="#9270CA" stroke-width="3" points="110.0,265.582 450.0,287.098 790.0,296.00800000000004 1130.0,304.808"/>
-<circle cx="110.0" cy="265.582" r="3.5" fill="#9270CA"/>
-<circle cx="450.0" cy="287.098" r="3.5" fill="#9270CA"/>
-<circle cx="790.0" cy="296.00800000000004" r="3.5" fill="#9270CA"/>
+<polyline fill="none" stroke="#5B8FF9" stroke-width="3" points="110.0,170.476 450.0,204.51 790.0,227.038 1130.0,256.254"/>
+<circle cx="110.0" cy="170.476" r="3.5" fill="#5B8FF9"/>
+<circle cx="450.0" cy="204.51" r="3.5" fill="#5B8FF9"/>
+<circle cx="790.0" cy="227.038" r="3.5" fill="#5B8FF9"/>
+<circle cx="1130.0" cy="256.254" r="3.5" fill="#5B8FF9"/>
+<text x="1142.0" y="260.254" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="12" font-weight="normal" text-anchor="start" fill="#5B8FF9">嘉然</text>
+<polyline fill="none" stroke="#61DDAA" stroke-width="3" points="110.0,180.35399999999998 450.0,219.272 790.0,243.11999999999998 1130.0,271.94"/>
+<circle cx="110.0" cy="180.35399999999998" r="3.5" fill="#61DDAA"/>
+<circle cx="450.0" cy="219.272" r="3.5" fill="#61DDAA"/>
+<circle cx="790.0" cy="243.11999999999998" r="3.5" fill="#61DDAA"/>
+<circle cx="1130.0" cy="271.94" r="3.5" fill="#61DDAA"/>
+<text x="1142.0" y="275.94" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="12" font-weight="normal" text-anchor="start" fill="#61DDAA">乃琳</text>
+<polyline fill="none" stroke="#9270CA" stroke-width="3" points="110.0,265.89 450.0,287.29600000000005 790.0,296.118 1130.0,304.808"/>
+<circle cx="110.0" cy="265.89" r="3.5" fill="#9270CA"/>
+<circle cx="450.0" cy="287.29600000000005" r="3.5" fill="#9270CA"/>
+<circle cx="790.0" cy="296.118" r="3.5" fill="#9270CA"/>
 <circle cx="1130.0" cy="304.808" r="3.5" fill="#9270CA"/>
 <text x="1142.0" y="308.808" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="12" font-weight="normal" text-anchor="start" fill="#9270CA">贝拉</text>
 <text x="110" y="380" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="16" font-weight="bold" text-anchor="start" fill="#1f2328">后续有效到场阈值（1 / 2 / 3 场）</text>
@@ -60,19 +60,19 @@
 <text x="620.0" y="640" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="middle" fill="#57606a">2</text>
 <line x1="1130.0" y1="400" x2="1130.0" y2="620" stroke="#eef2f6" stroke-width="1"/>
 <text x="1130.0" y="640" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="middle" fill="#57606a">3</text>
-<polyline fill="none" stroke="#5B8FF9" stroke-width="3" points="110.0,504.17 620.0,538.424 1130.0,558.774"/>
-<circle cx="110.0" cy="504.17" r="3.5" fill="#5B8FF9"/>
-<circle cx="620.0" cy="538.424" r="3.5" fill="#5B8FF9"/>
-<circle cx="1130.0" cy="558.774" r="3.5" fill="#5B8FF9"/>
-<text x="1142.0" y="562.774" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="12" font-weight="normal" text-anchor="start" fill="#5B8FF9">嘉然</text>
-<polyline fill="none" stroke="#61DDAA" stroke-width="3" points="110.0,514.246 620.0,550.744 1130.0,570.808"/>
-<circle cx="110.0" cy="514.246" r="3.5" fill="#61DDAA"/>
-<circle cx="620.0" cy="550.744" r="3.5" fill="#61DDAA"/>
-<circle cx="1130.0" cy="570.808" r="3.5" fill="#61DDAA"/>
-<text x="1142.0" y="574.808" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="12" font-weight="normal" text-anchor="start" fill="#61DDAA">乃琳</text>
-<polyline fill="none" stroke="#9270CA" stroke-width="3" points="110.0,585.02 620.0,602.642 1130.0,609.836"/>
-<circle cx="110.0" cy="585.02" r="3.5" fill="#9270CA"/>
-<circle cx="620.0" cy="602.642" r="3.5" fill="#9270CA"/>
-<circle cx="1130.0" cy="609.836" r="3.5" fill="#9270CA"/>
-<text x="1142.0" y="613.836" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="12" font-weight="normal" text-anchor="start" fill="#9270CA">贝拉</text>
+<polyline fill="none" stroke="#5B8FF9" stroke-width="3" points="110.0,504.214 620.0,538.402 1130.0,558.752"/>
+<circle cx="110.0" cy="504.214" r="3.5" fill="#5B8FF9"/>
+<circle cx="620.0" cy="538.402" r="3.5" fill="#5B8FF9"/>
+<circle cx="1130.0" cy="558.752" r="3.5" fill="#5B8FF9"/>
+<text x="1142.0" y="562.752" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="12" font-weight="normal" text-anchor="start" fill="#5B8FF9">嘉然</text>
+<polyline fill="none" stroke="#61DDAA" stroke-width="3" points="110.0,514.5319999999999 620.0,550.986 1130.0,570.962"/>
+<circle cx="110.0" cy="514.5319999999999" r="3.5" fill="#61DDAA"/>
+<circle cx="620.0" cy="550.986" r="3.5" fill="#61DDAA"/>
+<circle cx="1130.0" cy="570.962" r="3.5" fill="#61DDAA"/>
+<text x="1142.0" y="574.962" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="12" font-weight="normal" text-anchor="start" fill="#61DDAA">乃琳</text>
+<polyline fill="none" stroke="#9270CA" stroke-width="3" points="110.0,585.24 620.0,602.752 1130.0,609.88"/>
+<circle cx="110.0" cy="585.24" r="3.5" fill="#9270CA"/>
+<circle cx="620.0" cy="602.752" r="3.5" fill="#9270CA"/>
+<circle cx="1130.0" cy="609.88" r="3.5" fill="#9270CA"/>
+<text x="1142.0" y="613.88" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="12" font-weight="normal" text-anchor="start" fill="#9270CA">贝拉</text>
 </svg>
