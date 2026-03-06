@@ -5,6 +5,9 @@ from collections import defaultdict
 
 
 ROOT = Path(__file__).resolve().parent
+JSON_ROOT = ROOT / "弹幕JSON"
+DETAIL_ROOT = ROOT / "场次明细表"
+DETAIL_JSON_ROOT = DETAIL_ROOT / "弹幕JSON"
 
 
 def detect_host_and_type(folder_name: str, file_name: str, channel_name: str = "", live_title: str = ""):
@@ -156,7 +159,7 @@ def write_detail_csv(rows, output_csv: Path):
         writer.writerows(rows)
 
 
-def batch_process(root_dir: str, output_dir: str = None):
+def batch_process(root_dir: str, output_dir: str = None, merged_output_csv: str | Path | None = None):
     root_path = Path(root_dir)
 
     if output_dir:
@@ -164,13 +167,18 @@ def batch_process(root_dir: str, output_dir: str = None):
     else:
         out_root = root_path / "detail_output"
 
+    if merged_output_csv:
+        merged_csv = Path(merged_output_csv)
+    else:
+        merged_csv = out_root / "all_live_details.csv"
+
     out_root.mkdir(parents=True, exist_ok=True)
 
     all_rows = []
     success_count = 0
     fail_count = 0
 
-    json_files = list(root_path.rglob("*.json"))
+    json_files = sorted(root_path.rglob("*.json"))
 
     if not json_files:
         print("[WARN] 没有找到任何 json 文件")
@@ -197,7 +205,6 @@ def batch_process(root_dir: str, output_dir: str = None):
             print(f"[FAIL] {json_file} | 原因: {e}")
 
     if all_rows:
-        merged_csv = out_root / "all_live_details.csv"
         write_detail_csv(all_rows, merged_csv)
         print(f"[OK] 已生成总汇总表: {merged_csv}")
 
@@ -209,6 +216,7 @@ def batch_process(root_dir: str, output_dir: str = None):
 
 
 if __name__ == "__main__":
-    root_dir = ROOT
-    output_dir = ROOT / "场次明细表"
-    batch_process(root_dir, output_dir)
+    root_dir = JSON_ROOT
+    output_dir = DETAIL_JSON_ROOT
+    merged_output_csv = DETAIL_ROOT / "all_live_details.csv"
+    batch_process(root_dir, output_dir, merged_output_csv)

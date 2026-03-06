@@ -601,7 +601,6 @@ def build_report_markdown(source_live, analysis_result):
     lines.append("- `overlap`：source 人群与目标直播的人群重合，不要求时间先后。")
     lines.append("- `post_source`：只统计用户首次进入 source 之后，再去目标直播的行为。")
     lines.append("- `first_target`：用户首次进入 source 之后，第一个去到的非 source 目标。")
-    lines.append("- `D7/D14/D30`：首次进入 source 之后，在对应时间窗内是否到达目标直播。")
     lines.append("")
     lines.append("## 样本概况")
     lines.append("")
@@ -618,7 +617,7 @@ def build_report_markdown(source_live, analysis_result):
     for idx, row in enumerate(top_post, start=1):
         lines.append(
             f"- Top{idx} `{row['target_live']}`：post>=1 `{row['post_ge1_user_count']}` / `{row['post_ge1_rate']}`，"
-            f"D14 `{row['post_d14_ge1_user_count']}` / `{row['post_d14_ge1_rate']}`，"
+            f"post>=2 `{row['post_ge2_user_count']}` / `{row['post_ge2_rate']}`，"
             f"first_target `{row['first_target_user_count']}` / `{row['first_target_rate']}`"
         )
     lines.append("")
@@ -643,25 +642,12 @@ def build_report_markdown(source_live, analysis_result):
     for row in host_segment_rows:
         lines.append(f"- `{row['segment']}`：`{row['user_count']}` / `{row['user_rate']}`")
     lines.append("")
-    lines.append("## cohort 观察")
-    lines.append("")
-    if largest_cohort:
-        lines.append(
-            f"- 最大 source cohort：`{largest_cohort['source_session_name']}`，用户数 `{largest_cohort['cohort_user_count']}`，"
-            f"窗口内新客占比 `{largest_cohort['window_new_user_rate']}`，source 有效到场占比 `{largest_cohort['source_active_user_rate']}`"
-        )
-    for row in cohort_rows:
-        lines.append(
-            f"- cohort `{row['source_session_name']}`：规模 `{row['cohort_user_count']}`，"
-            f"窗口内新客占比 `{row['window_new_user_rate']}`，source 有效到场占比 `{row['source_active_user_rate']}`"
-        )
-    lines.append("")
     lines.append("## 建议写作角度")
     lines.append("")
     lines.append("- 先写 source 人群规模与样本窗口，再区分 overlap 与 post_source 两套口径。")
     lines.append("- 重点强调乃琳鸣潮对团内后续承接的方向：留在乃琳、流向嘉然、流向贝拉。")
-    lines.append("- 用 first_target 解释‘第一跳去了哪里’，用 D14/D30 解释短中期承接。")
-    lines.append("- 用 cohort 拆出不同 source 场次的质量差异，支撑更长篇幅的分析。")
+    lines.append("- 用 first_target 解释‘第一跳去了哪里’，再用 post>=2 / post>=3 补充沉淀深度。")
+    lines.append("- 如果要写扩展分析，再单独引用 cohort 表，不必放在主图主文里。")
     lines.append("")
     return "\n".join(lines)
 
