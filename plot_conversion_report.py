@@ -1,15 +1,24 @@
 import csv
+from html import escape
 from pathlib import Path
 
-import matplotlib.pyplot as plt
-import numpy as np
+
+ROOT = Path(__file__).resolve().parent
+SOURCE_LIVE = "乃琳_鸣潮"
+ANALYSIS_DIR = ROOT / "分析结果" / f"{SOURCE_LIVE}_后续承接分析"
+PLOTS_DIR = ANALYSIS_DIR / "plots"
+SUMMARY_CSV = ANALYSIS_DIR / "01_summary_by_target.csv"
+FIRST_TARGET_CSV = ANALYSIS_DIR / "02_first_target.csv"
+COHORT_CSV = ANALYSIS_DIR / "03_cohort_by_target.csv"
+HOST_SEGMENT_CSV = ANALYSIS_DIR / "04_host_flow_segments.csv"
+COHORT_OVERVIEW_CSV = ANALYSIS_DIR / "00_source_cohorts.csv"
+INDEX_HTML = PLOTS_DIR / "index.html"
 
 
-plt.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei", "Arial Unicode MS"]
-plt.rcParams["axes.unicode_minus"] = False
+FONT_FAMILY = "'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif"
 
 
-def safe_float(value, default=np.nan):
+def safe_float(value, default=0.0):
     try:
         if value is None or value == "":
             return default
@@ -32,170 +41,296 @@ def load_csv(csv_path: Path):
         return list(csv.DictReader(f))
 
 
-def sort_rows(rows):
+def fmt_pct(value):
+    return f"{value:.1%}"
+
+
+def sort_summary_rows(rows):
     return sorted(
         rows,
         key=lambda x: (
-            -safe_float(x.get("target_ge1_rate"), 0),
+            -safe_float(x.get("post_ge1_rate"), 0.0),
+            -safe_float(x.get("first_target_rate"), 0.0),
             x.get("target_live", ""),
-        )
+        ),
     )
 
 
-def add_bar_labels(ax, bars, values, session_counts=None, fmt="{:.1%}", dx=0.005):
-    for i, (bar, value) in enumerate(zip(bars, values)):
-        if np.isnan(value):
-            label = "N/A"
-            xpos = 0.01
-        else:
-            label = fmt.format(value)
-            xpos = bar.get_width() + dx
-
-        if session_counts is not None:
-            label = f"{label} (样本{session_counts[i]}场)"
-
-        ax.text(
-            xpos,
-            bar.get_y() + bar.get_height() / 2,
-            label,
-            va="center",
-            ha="left",
-            fontsize=9,
-        )
-
-
-def plot_reach_chart(rows, output_path: Path, source_name: str):
-    labels = [row["target_live"] for row in rows]
-    values = [safe_float(row["target_ge1_rate"], 0.0) for row in rows]
-    sessions = [safe_int(row.get("target_total_sessions"), 0) for row in rows]
-
-    fig_height = max(6, len(labels) * 0.55)
-    fig, ax = plt.subplots(figsize=(10, fig_height))
-
-    y = np.arange(len(labels))
-    bars = ax.barh(y, values, color="#5B8FF9")
-
-    ax.set_yticks(y)
-    ax.set_yticklabels(labels, fontsize=10)
-    ax.invert_yaxis()
-    ax.set_xlim(0, max(values) * 1.25 if values and max(values) > 0 else 1)
-    ax.set_xlabel("比例")
-    ax.set_title(f"{source_name} 人群目标直播覆盖率（到场>=1）", fontsize=14, pad=12)
-    ax.grid(axis="x", linestyle="--", alpha=0.3)
-
-    add_bar_labels(ax, bars, values, session_counts=sessions)
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=180, bbox_inches="tight")
-    plt.close()
-
-
-def plot_retention_chart(rows, output_path: Path, source_name: str):
-    labels = [row["target_live"] for row in rows]
-    sessions = [safe_int(row.get("target_total_sessions"), 0) for row in rows]
-
-    v1 = [safe_float(row["target_ge1_rate"], 0.0) for row in rows]
-    v2 = [
-        safe_float(row["target_ge2_rate"], np.nan)
-        if safe_int(row.get("target_total_sessions"), 0) >= 2 else np.nan
-        for row in rows
-    ]
-    v3 = [
-        safe_float(row["target_ge3_rate"], np.nan)
-        if safe_int(row.get("target_total_sessions"), 0) >= 3 else np.nan
-        for row in rows
+def svg_start(width, height):
+    return [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
+        f'<rect width="{width}" height="{height}" fill="white"/>',
     ]
 
-    fig_height = max(6, len(labels) * 0.6)
-    fig, ax = plt.subplots(figsize=(11, fig_height))
 
-    y = np.arange(len(labels))
-    h = 0.22
-
-    v2_plot = np.nan_to_num(v2, nan=0.0)
-    v3_plot = np.nan_to_num(v3, nan=0.0)
-
-    bars1 = ax.barh(y - h, v1, height=h, color="#91CC75", label="到场>=1")
-    bars2 = ax.barh(y, v2_plot, height=h, color="#FAC858", label="到场>=2（仅目标总场次>=2）")
-    bars3 = ax.barh(y + h, v3_plot, height=h, color="#EE6666", label="到场>=3（仅目标总场次>=3）")
-
-    ax.set_yticks(y)
-    ax.set_yticklabels([f"{label}（{sess}场）" for label, sess in zip(labels, sessions)], fontsize=10)
-    ax.invert_yaxis()
-
-    max_candidates = v1 + [x for x in v2 if not np.isnan(x)] + [x for x in v3 if not np.isnan(x)]
-    max_value = max(max_candidates) if max_candidates else 1
-    ax.set_xlim(0, max_value * 1.22 if max_value > 0 else 1)
-
-    ax.set_xlabel("比例")
-    ax.set_title(f"{source_name} 人群多阈值沉淀率（按目标总场次动态展示）", fontsize=14, pad=12)
-    ax.grid(axis="x", linestyle="--", alpha=0.3)
-    ax.legend()
-
-    add_bar_labels(ax, bars1, v1)
-    add_bar_labels(ax, bars2, v2)
-    add_bar_labels(ax, bars3, v3)
-
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=180, bbox_inches="tight")
-    plt.close()
+def svg_end(lines, output_path: Path):
+    lines.append("</svg>")
+    output_path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def plot_active_chart(rows, output_path: Path, source_name: str):
-    if not rows or "target_active_ge1_rate" not in rows[0]:
-        print("[INFO] CSV中无 target_active_ge1_rate，跳过有效承接图")
-        return
+def add_text(lines, x, y, text, size=12, anchor="start", weight="normal", fill="#1f2328"):
+    lines.append(
+        f'<text x="{x}" y="{y}" font-family="{FONT_FAMILY}" font-size="{size}" '
+        f'font-weight="{weight}" text-anchor="{anchor}" fill="{fill}">{escape(str(text))}</text>'
+    )
 
+
+def add_rect(lines, x, y, width, height, fill, stroke="none", rx=0):
+    lines.append(
+        f'<rect x="{x}" y="{y}" width="{max(width, 0)}" height="{height}" fill="{fill}" stroke="{stroke}" rx="{rx}"/>'
+    )
+
+
+def add_line(lines, x1, y1, x2, y2, stroke="#d0d7de", stroke_width=1, dash=False):
+    extra = ' stroke-dasharray="4 4"' if dash else ""
+    lines.append(
+        f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{stroke}" stroke-width="{stroke_width}"{extra}/>'
+    )
+
+
+def scale_linear(value, max_value, span):
+    if max_value <= 0:
+        return 0
+    return value / max_value * span
+
+
+def draw_legend(lines, items, x, y):
+    cursor_x = x
+    for color, label in items:
+        add_rect(lines, cursor_x, y - 10, 14, 14, color, rx=2)
+        add_text(lines, cursor_x + 20, y + 2, label, size=12)
+        cursor_x += 20 + len(label) * 14
+
+
+def draw_grouped_hbar(labels, series, title, output_path: Path):
+    left = 250
+    right = 120
+    top = 95
+    bottom = 40
+    bar_h = 14
+    inner_gap = 5
+    group_gap = 16
+    row_h = len(series) * bar_h + (len(series) - 1) * inner_gap + group_gap
+    width = 1200
+    height = top + bottom + len(labels) * row_h
+    chart_w = width - left - right
+    max_value = max((max(item["values"]) for item in series if item["values"]), default=1)
+    max_value = max_value * 1.15 if max_value > 0 else 1
+
+    lines = svg_start(width, height)
+    add_text(lines, width / 2, 38, title, size=24, anchor="middle", weight="bold")
+    draw_legend(lines, [(item["color"], item["label"]) for item in series], left, 66)
+
+    ticks = 5
+    for i in range(ticks + 1):
+        value = max_value * i / ticks
+        x = left + chart_w * i / ticks
+        add_line(lines, x, top - 10, x, height - bottom, dash=True)
+        add_text(lines, x, height - 12, fmt_pct(value), size=11, anchor="middle", fill="#57606a")
+
+    for idx, label in enumerate(labels):
+        y_group = top + idx * row_h
+        label_y = y_group + (len(series) * bar_h + (len(series) - 1) * inner_gap) / 2 + 4
+        add_text(lines, left - 12, label_y, label, size=13, anchor="end")
+
+        for s_idx, item in enumerate(series):
+            value = item["values"][idx]
+            y = y_group + s_idx * (bar_h + inner_gap)
+            bar_w = scale_linear(value, max_value, chart_w)
+            add_rect(lines, left, y, bar_w, bar_h, item["color"], rx=3)
+            add_text(lines, left + bar_w + 8, y + 12, fmt_pct(value), size=11, fill="#57606a")
+
+    svg_end(lines, output_path)
+
+
+def draw_vertical_bar(labels, values, colors, title, output_path: Path):
+    left = 70
+    right = 40
+    top = 80
+    bottom = 120
+    width = max(900, len(labels) * 120)
+    height = 600
+    chart_w = width - left - right
+    chart_h = height - top - bottom
+    max_value = max(values) if values else 1
+    max_value = max_value * 1.18 if max_value > 0 else 1
+
+    lines = svg_start(width, height)
+    add_text(lines, width / 2, 36, title, size=24, anchor="middle", weight="bold")
+
+    ticks = 5
+    for i in range(ticks + 1):
+        value = max_value * i / ticks
+        y = top + chart_h - chart_h * i / ticks
+        add_line(lines, left, y, width - right, y, dash=True)
+        add_text(lines, left - 10, y + 4, fmt_pct(value), size=11, anchor="end", fill="#57606a")
+
+    bar_slot = chart_w / max(len(labels), 1)
+    bar_w = min(64, bar_slot * 0.62)
+    for idx, (label, value) in enumerate(zip(labels, values)):
+        x = left + idx * bar_slot + (bar_slot - bar_w) / 2
+        bar_h = scale_linear(value, max_value, chart_h)
+        y = top + chart_h - bar_h
+        color = colors[idx % len(colors)]
+        add_rect(lines, x, y, bar_w, bar_h, color, rx=4)
+        add_text(lines, x + bar_w / 2, y - 8, fmt_pct(value), size=11, anchor="middle", fill="#57606a")
+        add_text(lines, x + bar_w / 2, height - 56, label, size=12, anchor="middle")
+
+    svg_end(lines, output_path)
+
+
+def interpolate_color(ratio, low=(239, 248, 255), high=(8, 81, 156)):
+    ratio = max(0.0, min(1.0, ratio))
+    rgb = tuple(int(low[i] + (high[i] - low[i]) * ratio) for i in range(3))
+    return f"rgb({rgb[0]},{rgb[1]},{rgb[2]})"
+
+
+def draw_heatmap(row_labels, col_labels, matrix, title, output_path: Path):
+    cell_w = 140
+    cell_h = 34
+    left = 240
+    top = 110
+    right = 40
+    bottom = 40
+    width = left + len(col_labels) * cell_w + right
+    height = top + len(row_labels) * cell_h + bottom
+    max_value = max((max(row) for row in matrix), default=1)
+    max_value = max(max_value, 0.0001)
+
+    lines = svg_start(width, height)
+    add_text(lines, width / 2, 38, title, size=24, anchor="middle", weight="bold")
+
+    for col_idx, label in enumerate(col_labels):
+        x = left + col_idx * cell_w + cell_w / 2
+        add_text(lines, x, top - 18, label, size=12, anchor="middle")
+
+    for row_idx, label in enumerate(row_labels):
+        y = top + row_idx * cell_h + cell_h / 2 + 5
+        add_text(lines, left - 12, y, label, size=12, anchor="end")
+
+    for row_idx, row in enumerate(matrix):
+        for col_idx, value in enumerate(row):
+            x = left + col_idx * cell_w
+            y = top + row_idx * cell_h
+            fill = interpolate_color(value / max_value)
+            add_rect(lines, x, y, cell_w - 2, cell_h - 2, fill)
+            text_fill = "white" if value / max_value > 0.55 else "#0b1f33"
+            add_text(lines, x + cell_w / 2, y + cell_h / 2 + 4, fmt_pct(value), size=11, anchor="middle", fill=text_fill)
+
+    svg_end(lines, output_path)
+
+
+def plot_overlap_vs_post(rows, output_path: Path, source_name: str):
+    rows = sort_summary_rows(rows)
     labels = [row["target_live"] for row in rows]
-    sessions = [safe_int(row.get("target_total_sessions"), 0) for row in rows]
-    reach_values = [safe_float(row["target_ge1_rate"], 0.0) for row in rows]
-    active_values = [safe_float(row.get("target_active_ge1_rate"), 0.0) for row in rows]
+    series = [
+        {"label": "重合率 overlap>=1", "color": "#5B8FF9", "values": [safe_float(row["overlap_ge1_rate"], 0.0) for row in rows]},
+        {"label": "后续承接率 post>=1", "color": "#61DDAA", "values": [safe_float(row["post_ge1_rate"], 0.0) for row in rows]},
+        {"label": "后续有效承接率", "color": "#F6BD16", "values": [safe_float(row["post_active_ge1_rate"], 0.0) for row in rows]},
+    ]
+    draw_grouped_hbar(labels, series, f"{source_name} 人群：重合率 vs 后续承接率", output_path)
 
-    fig_height = max(6, len(labels) * 0.6)
-    fig, ax = plt.subplots(figsize=(11, fig_height))
 
-    y = np.arange(len(labels))
-    h = 0.35
+def plot_window_chart(rows, output_path: Path, source_name: str):
+    rows = sort_summary_rows(rows)
+    labels = [row["target_live"] for row in rows]
+    series = [
+        {"label": "D7", "color": "#91CC75", "values": [safe_float(row["post_d7_ge1_rate"], 0.0) for row in rows]},
+        {"label": "D14", "color": "#FAC858", "values": [safe_float(row["post_d14_ge1_rate"], 0.0) for row in rows]},
+        {"label": "D30", "color": "#EE6666", "values": [safe_float(row["post_d30_ge1_rate"], 0.0) for row in rows]},
+    ]
+    draw_grouped_hbar(labels, series, f"{source_name} 人群：后续承接时间窗（D7 / D14 / D30）", output_path)
 
-    bars1 = ax.barh(y - h / 2, reach_values, height=h, color="#73C0DE", label="到场>=1")
-    bars2 = ax.barh(y + h / 2, active_values, height=h, color="#3BA272", label="有效到场>=1")
 
-    ax.set_yticks(y)
-    ax.set_yticklabels([f"{label}（{sess}场）" for label, sess in zip(labels, sessions)], fontsize=10)
-    ax.invert_yaxis()
+def plot_first_target(rows, output_path: Path, source_name: str):
+    filtered = [row for row in rows if row.get("first_target") != "无后续非source目标"]
+    filtered = sorted(filtered, key=lambda x: (-safe_float(x.get("user_rate"), 0.0), x.get("first_target", "")))
+    labels = [row["first_target"] for row in filtered]
+    series = [
+        {"label": "首次后续去向占比", "color": "#5D7092", "values": [safe_float(row["user_rate"], 0.0) for row in filtered]},
+    ]
+    draw_grouped_hbar(labels, series, f"{source_name} 人群：首次后续去向（first target）", output_path)
 
-    max_value = max(reach_values + active_values) if rows else 1
-    ax.set_xlim(0, max_value * 1.22 if max_value > 0 else 1)
-    ax.set_xlabel("比例")
-    ax.set_title(f"{source_name} 人群覆盖率 vs 有效承接", fontsize=14, pad=12)
-    ax.grid(axis="x", linestyle="--", alpha=0.3)
-    ax.legend()
 
-    add_bar_labels(ax, bars1, reach_values)
-    add_bar_labels(ax, bars2, active_values)
+def plot_host_segments(rows, output_path: Path, source_name: str):
+    labels = [row["segment"] for row in rows]
+    values = [safe_float(row["user_rate"], 0.0) for row in rows]
+    colors = ["#8D8D8D", "#61DDAA", "#5B8FF9", "#9270CA", "#78D3F8", "#F6BD16", "#E8684A", "#6DC8EC"]
+    draw_vertical_bar(labels, values, colors, f"{source_name} 人群：团内流动分层", output_path)
 
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=180, bbox_inches="tight")
-    plt.close()
+
+def plot_cohort_heatmap(cohort_rows, cohort_overview_rows, output_path: Path, source_name: str):
+    cohort_order = sorted(
+        cohort_overview_rows,
+        key=lambda x: (safe_int(x.get("source_session_start"), 0), x.get("source_session_name", "")),
+    )
+    target_order = []
+    target_best = {}
+    for row in cohort_rows:
+        target = row["target_live"]
+        score = safe_float(row.get("post_d14_ge1_rate"), 0.0)
+        if target not in target_best or score > target_best[target]:
+            target_best[target] = score
+    for target, _ in sorted(target_best.items(), key=lambda item: (-item[1], item[0])):
+        target_order.append(target)
+
+    value_map = {}
+    for row in cohort_rows:
+        value_map[(row["target_live"], row["source_session_name"])] = safe_float(row.get("post_d14_ge1_rate"), 0.0)
+
+    row_labels = target_order
+    col_labels = [row["source_session_name"] for row in cohort_order]
+    matrix = []
+    for target in row_labels:
+        matrix.append([value_map.get((target, cohort), 0.0) for cohort in col_labels])
+
+    draw_heatmap(row_labels, col_labels, matrix, f"{source_name} 各 source cohort 的 D14 后续承接热力图", output_path)
+
+
+def build_index_html(files):
+    lines = [
+        "<html><head><meta charset='utf-8'><title>乃琳鸣潮后续承接图表</title></head><body>",
+        f"<h1>{escape(SOURCE_LIVE)} 后续承接图表</h1>",
+        "<ul>",
+    ]
+    for file in files:
+        lines.append(f"<li><a href='{escape(file.name)}'>{escape(file.name)}</a></li>")
+    lines.append("</ul></body></html>")
+    return "\n".join(lines)
 
 
 def main():
-    input_csv = Path(r"D:\wins\Desktop\as\分析结果\conversion_report_乃琳鸣潮.csv")
-    output_dir = Path(r"D:\wins\Desktop\as\分析结果\plots_conversion")
-    output_dir.mkdir(parents=True, exist_ok=True)
+    PLOTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    rows = load_csv(input_csv)
-    if not rows:
-        print("[WARN] 输入CSV为空，结束")
+    summary_rows = load_csv(SUMMARY_CSV)
+    first_target_rows = load_csv(FIRST_TARGET_CSV)
+    cohort_rows = load_csv(COHORT_CSV)
+    host_segment_rows = load_csv(HOST_SEGMENT_CSV)
+    cohort_overview_rows = load_csv(COHORT_OVERVIEW_CSV)
+
+    if not summary_rows:
+        print("[WARN] summary CSV 为空，结束")
         return
 
-    rows = sort_rows(rows)
-    source_name = rows[0].get("source_live", "乃琳_鸣潮")
+    source_name = summary_rows[0].get("source_live", SOURCE_LIVE)
 
-    plot_reach_chart(rows, output_dir / "01_乃琳鸣潮_覆盖率_到场ge1.png", source_name)
-    plot_retention_chart(rows, output_dir / "02_乃琳鸣潮_多阈值沉淀率.png", source_name)
-    plot_active_chart(rows, output_dir / "03_乃琳鸣潮_覆盖率_vs_有效承接.png", source_name)
+    output_files = [
+        PLOTS_DIR / "01_重合率_vs_后续承接率.svg",
+        PLOTS_DIR / "02_D7_D14_D30后续承接率.svg",
+        PLOTS_DIR / "03_首次后续去向.svg",
+        PLOTS_DIR / "04_团内流动分层.svg",
+        PLOTS_DIR / "05_cohort_D14热力图.svg",
+    ]
 
-    print(f"[OK] 图表已输出到: {output_dir}")
+    plot_overlap_vs_post(summary_rows, output_files[0], source_name)
+    plot_window_chart(summary_rows, output_files[1], source_name)
+    plot_first_target(first_target_rows, output_files[2], source_name)
+    plot_host_segments(host_segment_rows, output_files[3], source_name)
+    plot_cohort_heatmap(cohort_rows, cohort_overview_rows, output_files[4], source_name)
+
+    INDEX_HTML.write_text(build_index_html(output_files), encoding="utf-8")
+    print(f"[OK] SVG 图表已输出到: {PLOTS_DIR}")
+    print(f"[OK] 索引页: {INDEX_HTML}")
 
 
 if __name__ == "__main__":

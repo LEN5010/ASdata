@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="815" viewBox="0 0 1200 815">
+<rect width="1200" height="815" fill="white"/>
+<text x="600.0" y="38" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#1f2328">乃琳_鸣潮 人群：重合率 vs 后续承接率</text>
+<rect x="250" y="56" width="14" height="14" fill="#5B8FF9" stroke="none" rx="2"/>
+<text x="270" y="68" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="12" font-weight="normal" text-anchor="start" fill="#1f2328">重合率 overlap&gt;=1</text>
+<rect x="466" y="56" width="14" height="14" fill="#61DDAA" stroke="none" rx="2"/>
+<text x="486" y="68" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="12" font-weight="normal" text-anchor="start" fill="#1f2328">后续承接率 post&gt;=1</text>
+<rect x="668" y="56" width="14" height="14" fill="#F6BD16" stroke="none" rx="2"/>
+<text x="688" y="68" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="12" font-weight="normal" text-anchor="start" fill="#1f2328">后续有效承接率</text>
+<line x1="250.0" y1="85" x2="250.0" y2="775" stroke="#d0d7de" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="250.0" y="803" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="middle" fill="#57606a">0.0%</text>
+<line x1="416.0" y1="85" x2="416.0" y2="775" stroke="#d0d7de" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="416.0" y="803" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="middle" fill="#57606a">13.5%</text>
+<line x1="582.0" y1="85" x2="582.0" y2="775" stroke="#d0d7de" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="582.0" y="803" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="middle" fill="#57606a">27.1%</text>
+<line x1="748.0" y1="85" x2="748.0" y2="775" stroke="#d0d7de" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="748.0" y="803" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="middle" fill="#57606a">40.6%</text>
+<line x1="914.0" y1="85" x2="914.0" y2="775" stroke="#d0d7de" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="914.0" y="803" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="middle" fill="#57606a">54.2%</text>
+<line x1="1080.0" y1="85" x2="1080.0" y2="775" stroke="#d0d7de" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="1080.0" y="803" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="middle" fill="#57606a">67.7%</text>
+<text x="238" y="125.0" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="13" font-weight="normal" text-anchor="end" fill="#1f2328">嘉然_鸣潮</text>
+<rect x="250" y="95" width="721.7391304347827" height="14" fill="#5B8FF9" stroke="none" rx="3"/>
+<text x="979.7391304347827" y="107" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">58.9%</text>
+<rect x="250" y="114" width="676.7453711567863" height="14" fill="#61DDAA" stroke="none" rx="3"/>
+<text x="934.7453711567863" y="126" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">55.2%</text>
+<rect x="250" y="133" width="555.4951588245287" height="14" fill="#F6BD16" stroke="none" rx="3"/>
+<text x="813.4951588245287" y="145" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">45.3%</text>
+<text x="238" y="193.0" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="13" font-weight="normal" text-anchor="end" fill="#1f2328">乃琳_电台</text>
+<rect x="250" y="163" width="305.88400381090247" height="14" fill="#5B8FF9" stroke="none" rx="3"/>
+<text x="563.8840038109024" y="175" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">24.9%</text>
+<rect x="250" y="182" width="305.88400381090247" height="14" fill="#61DDAA" stroke="none" rx="3"/>
+<text x="563.8840038109024" y="194" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">24.9%</text>
+<rect x="250" y="201" width="236.61568230662996" height="14" fill="#F6BD16" stroke="none" rx="3"/>
+<text x="494.61568230663" y="213" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">19.3%</text>
+<text x="238" y="261.0" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="13" font-weight="normal" text-anchor="end" fill="#1f2328">乃琳_3D</text>
+<rect x="250" y="231" width="213.4445092724574" height="14" fill="#5B8FF9" stroke="none" rx="3"/>
+<text x="471.44450927245737" y="243" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">17.4%</text>
+<rect x="250" y="250" width="213.4445092724574" height="14" fill="#61DDAA" stroke="none" rx="3"/>
+<text x="471.44450927245737" y="262" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">17.4%</text>
+<rect x="250" y="269" width="159.74623525675585" height="14" fill="#F6BD16" stroke="none" rx="3"/>
+<text x="417.7462352567559" y="281" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">13.0%</text>
+<text x="238" y="329.0" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="13" font-weight="normal" text-anchor="end" fill="#1f2328">乃琳_团播</text>
+<rect x="250" y="299" width="191.37672543038823" height="14" fill="#5B8FF9" stroke="none" rx="3"/>
+<text x="449.3767254303882" y="311" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">15.6%</text>
+<rect x="250" y="318" width="191.37672543038823" height="14" fill="#61DDAA" stroke="none" rx="3"/>
+<text x="449.3767254303882" y="330" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">15.6%</text>
+<rect x="250" y="337" width="148.0993493401083" height="14" fill="#F6BD16" stroke="none" rx="3"/>
+<text x="406.0993493401083" y="349" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">12.1%</text>
+<text x="238" y="397.0" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="13" font-weight="normal" text-anchor="end" fill="#1f2328">贝拉_终末地</text>
+<rect x="250" y="367" width="180.4654323084763" height="14" fill="#5B8FF9" stroke="none" rx="3"/>
+<text x="438.4654323084763" y="379" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">14.7%</text>
+<rect x="250" y="386" width="175.80667794181727" height="14" fill="#61DDAA" stroke="none" rx="3"/>
+<text x="433.80667794181727" y="398" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">14.3%</text>
+<rect x="250" y="405" width="136.20726582521547" height="14" fill="#F6BD16" stroke="none" rx="3"/>
+<text x="394.2072658252155" y="417" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">11.1%</text>
+<text x="238" y="465.0" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="13" font-weight="normal" text-anchor="end" fill="#1f2328">嘉然_团播</text>
+<rect x="250" y="435" width="167.59255840060266" height="14" fill="#5B8FF9" stroke="none" rx="3"/>
+<text x="425.5925584006027" y="447" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">13.7%</text>
+<rect x="250" y="454" width="167.59255840060266" height="14" fill="#61DDAA" stroke="none" rx="3"/>
+<text x="425.5925584006027" y="466" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">13.7%</text>
+<rect x="250" y="473" width="128.8513378778591" height="14" fill="#F6BD16" stroke="none" rx="3"/>
+<text x="386.8513378778591" y="485" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">10.5%</text>
+<text x="238" y="533.0" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="13" font-weight="normal" text-anchor="end" fill="#1f2328">嘉然_电台</text>
+<rect x="250" y="503" width="159.99143285500108" height="14" fill="#5B8FF9" stroke="none" rx="3"/>
+<text x="417.9914328550011" y="515" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">13.1%</text>
+<rect x="250" y="522" width="159.99143285500108" height="14" fill="#61DDAA" stroke="none" rx="3"/>
+<text x="417.9914328550011" y="534" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">13.1%</text>
+<rect x="250" y="541" width="121.98580512699316" height="14" fill="#F6BD16" stroke="none" rx="3"/>
+<text x="379.98580512699317" y="553" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">10.0%</text>
+<text x="238" y="601.0" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="13" font-weight="normal" text-anchor="end" fill="#1f2328">嘉然_3D</text>
+<rect x="250" y="571" width="137.67845141468675" height="14" fill="#5B8FF9" stroke="none" rx="3"/>
+<text x="395.6784514146867" y="583" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">11.2%</text>
+<rect x="250" y="590" width="137.67845141468675" height="14" fill="#61DDAA" stroke="none" rx="3"/>
+<text x="395.6784514146867" y="602" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">11.2%</text>
+<rect x="250" y="609" width="102.12479966913095" height="14" fill="#F6BD16" stroke="none" rx="3"/>
+<text x="360.12479966913094" y="621" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">8.3%</text>
+<text x="238" y="669.0" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="13" font-weight="normal" text-anchor="end" fill="#1f2328">嘉然_电影</text>
+<rect x="250" y="639" width="108.74513482175169" height="14" fill="#5B8FF9" stroke="none" rx="3"/>
+<text x="366.74513482175166" y="651" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">8.9%</text>
+<rect x="250" y="658" width="108.74513482175169" height="14" fill="#61DDAA" stroke="none" rx="3"/>
+<text x="366.74513482175166" y="670" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">8.9%</text>
+<rect x="250" y="677" width="81.77339901477833" height="14" fill="#F6BD16" stroke="none" rx="3"/>
+<text x="339.7733990147783" y="689" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">6.7%</text>
+<text x="238" y="737.0" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="13" font-weight="normal" text-anchor="end" fill="#1f2328">贝拉_3D</text>
+<rect x="250" y="707" width="75.76605785777063" height="14" fill="#5B8FF9" stroke="none" rx="3"/>
+<text x="333.76605785777065" y="719" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">6.2%</text>
+<rect x="250" y="726" width="75.76605785777063" height="14" fill="#61DDAA" stroke="none" rx="3"/>
+<text x="333.76605785777065" y="738" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">6.2%</text>
+<rect x="250" y="745" width="58.11183078411533" height="14" fill="#F6BD16" stroke="none" rx="3"/>
+<text x="316.11183078411534" y="757" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#57606a">4.7%</text>
+</svg>
