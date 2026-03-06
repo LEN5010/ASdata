@@ -1,7 +1,12 @@
 # fans_plot.py
+import os
 import csv
 from collections import defaultdict
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+os.environ.setdefault("MPLCONFIGDIR", str(ROOT / ".mplconfig"))
+os.environ.setdefault("XDG_CACHE_HOME", str(ROOT / ".cache"))
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,7 +16,6 @@ plt.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei", "Arial Unicode M
 plt.rcParams["axes.unicode_minus"] = False
 
 
-ROOT = Path(r"D:\wins\Desktop\as")
 DETAIL_CSV = ROOT / "场次明细表" / "all_live_details.csv"
 BLACKLIST_CSV = ROOT / "黑名单" / "uid_blacklist.csv"
 OUT_DIR = ROOT / "分析结果"

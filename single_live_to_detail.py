@@ -4,6 +4,9 @@ from pathlib import Path
 from collections import defaultdict
 
 
+ROOT = Path(__file__).resolve().parent
+
+
 def detect_host_and_type(folder_name: str, file_name: str, channel_name: str = "", live_title: str = ""):
     text = f"{folder_name} {file_name} {channel_name} {live_title}"
 
@@ -206,6 +209,6 @@ def batch_process(root_dir: str, output_dir: str = None):
 
 
 if __name__ == "__main__":
-    root_dir = r"D:\wins\Desktop\as"
-    output_dir = r"D:\wins\Desktop\as\场次明细表"
+    root_dir = ROOT
+    output_dir = ROOT / "场次明细表"
     batch_process(root_dir, output_dir)

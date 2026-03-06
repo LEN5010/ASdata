@@ -3,6 +3,9 @@ from pathlib import Path
 from collections import defaultdict
 
 
+ROOT = Path(__file__).resolve().parent
+
+
 def safe_int(value, default=0):
     try:
         if value is None or value == "":
@@ -218,9 +221,9 @@ def write_csv(rows, output_csv: Path, fieldnames=None):
 
 
 def main():
-    detail_csv = Path(r"D:\wins\Desktop\as\场次明细表\all_live_details.csv")
-    blacklist_csv = Path(r"D:\wins\Desktop\as\黑名单\uid_blacklist.csv")
-    output_dir = Path(r"D:\wins\Desktop\as\用户总表")
+    detail_csv = ROOT / "场次明细表" / "all_live_details.csv"
+    blacklist_csv = ROOT / "黑名单" / "uid_blacklist.csv"
+    output_dir = ROOT / "用户总表"
 
     print(f"[INFO] 读取明细表: {detail_csv}")
     detail_rows = load_detail_csv(detail_csv)
