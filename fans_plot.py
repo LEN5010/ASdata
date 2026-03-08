@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 DETAIL_CSV = ROOT / "场次明细表" / "all_live_details.csv"
 BLACKLIST_CSV = ROOT / "黑名单" / "uid_blacklist.csv"
+SUPPLEMENT_SOURCE_CSV = ROOT / "KG补充名单" / "uid_live_stats.csv"
 OUT_DIR = ROOT / "分析结果"
 
 SOURCE_LIVE = "乃琳_鸣潮"
@@ -17,7 +18,6 @@ SUMMARY_ACTIVE_THRESHOLDS = [1, 2, 3]
 OUT_CSV = OUT_DIR / "fans_conversion_三人解释性阈值_摘要.csv"
 OUT_LONG_CSV = OUT_DIR / "fans_conversion_三人解释性阈值_非零长表.csv"
 OUT_SVG = OUT_DIR / "fans_conversion_三人解释性阈值.svg"
-OUT_MD = OUT_DIR / "fans_conversion_三人解释性阈值_说明.md"
 LEGACY_OUT_CSV = OUT_DIR / "fans_conversion_三人多阈值.csv"
 
 FONT_FAMILY = "'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif"
@@ -44,6 +44,34 @@ def safe_int(v, default=0):
 def load_csv_rows(path: Path):
     with path.open("r", encoding="utf-8-sig", newline="") as f:
         return list(csv.DictReader(f))
+
+
+def recalc_present_active(row):
+    danmu_count = safe_int(row.get("danmu_count"), 0)
+    gift_count = safe_int(row.get("gift_count"), 0)
+    gift_amount = float(row.get("gift_amount") or 0) if str(row.get("gift_amount") or '').strip() else 0.0
+    is_present = 1 if (danmu_count > 0 or gift_count > 0 or gift_amount > 0) else safe_int(row.get("is_present"), 0)
+    is_active = 1 if (danmu_count >= 2 or gift_amount > 0) else 0
+    return is_present, is_active
+
+
+def load_source_supplement_rows(path: Path, source_live: str):
+    if not path.exists():
+        return []
+    source_host, source_type = source_live.split("_", 1)
+    rows = []
+    with path.open("r", encoding="utf-8-sig", newline="") as f:
+        for row in csv.DictReader(f):
+            host = safe_str(row.get("host"))
+            live_type = safe_str(row.get("live_type"))
+            if host != source_host or live_type != source_type:
+                continue
+            cloned = dict(row)
+            is_present, is_active = recalc_present_active(cloned)
+            cloned["is_present"] = str(is_present)
+            cloned["is_active"] = str(is_active)
+            rows.append(cloned)
+    return rows
 
 
 def load_blacklist(path: Path):
@@ -292,68 +320,25 @@ def build_threshold_svg(summary_rows, meta, out_svg: Path):
     svg_end(lines, out_svg)
 
 
-def build_note_markdown(summary_rows, long_rows, meta, out_md: Path):
-    lines = [
-        f"# {meta['source_live']} 三人后续承接解释性阈值说明",
-        "",
-        "## 为什么旧版数据偏高",
-        "",
-        "- 旧版 `fans_conversion_三人多阈值.csv` 按主播聚合，`嘉然` 会把嘉然鸣潮、团播、3D、电台、电影全部累加到一起。",
-        "- 旧版不区分时间先后，source 之前已经去过其他直播的记录也会被算进去。",
-        "- 旧版 `乃琳` 会把 source 场次本身算进去，所以 `乃琳 ge1=100%` 几乎是必然结果。",
-        "- 全阈值虽然完整，但尾部会因为直播场次不足出现大量 0，展示效果很差。",
-        "",
-        "## 新版口径",
-        "",
-        "- 只统计 **首次进入 `乃琳_鸣潮` 之后** 的后续场次。",
-        "- 主表只保留更有解释力的阈值：到场 `1/2/3/5` 场，有效到场 `1/2/3` 场。",
-        "- 额外输出一张仅保留非零值的长表，方便后续扩展分析。",
-        "",
-        "## 当前概况",
-        "",
-        f"- source_user_count：`{meta['source_user_count']}`",
-        f"- 最大后续到场阈值：`{meta['max_present_threshold']}`",
-        f"- 最大后续有效到场阈值：`{meta['max_active_threshold']}`",
-        f"- 黑名单过滤行数：`{meta['blacklisted_count']}`",
-        f"- 非法 UID 过滤行数：`{meta['invalid_uid_count']}`",
-        "",
-        "## 关键读法",
-        "",
-    ]
-    for row in summary_rows:
-        lines.append(
-            f"- `{row['host']}`：post>=1 `{row.get('post_ge1_rate', 0)}`，post>=2 `{row.get('post_ge2_rate', 0)}`，post>=3 `{row.get('post_ge3_rate', 0)}`，post>=5 `{row.get('post_ge5_rate', 0)}`；"
-            f"post_active>=1 `{row.get('post_active_ge1_rate', 0)}`，post_active>=2 `{row.get('post_active_ge2_rate', 0)}`，post_active>=3 `{row.get('post_active_ge3_rate', 0)}`"
-        )
-    lines.append("")
-    lines.append("## 非零阈值上限")
-    lines.append("")
-    for row in summary_rows:
-        lines.append(
-            f"- `{row['host']}`：后续到场最高非零阈值 `{row['post_present_max_nonzero_threshold']}`，后续有效到场最高非零阈值 `{row['post_active_max_nonzero_threshold']}`"
-        )
-    lines.append("")
-    lines.append(f"- 非零长表行数：`{len(long_rows)}`")
-    out_md.write_text("\n".join(lines), encoding="utf-8")
 
 
 def main():
     detail_rows = load_csv_rows(DETAIL_CSV)
+    supplement_rows = load_source_supplement_rows(SUPPLEMENT_SOURCE_CSV, SOURCE_LIVE)
     blacklist = load_blacklist(BLACKLIST_CSV)
 
-    summary_rows, long_rows, meta = build_stats(detail_rows, blacklist, SOURCE_LIVE, HOSTS)
+    summary_rows, long_rows, meta = build_stats(detail_rows + supplement_rows, blacklist, SOURCE_LIVE, HOSTS)
 
     write_csv(summary_rows, OUT_CSV)
     write_csv(summary_rows, LEGACY_OUT_CSV)
     write_csv(long_rows, OUT_LONG_CSV)
     build_threshold_svg(summary_rows, meta, OUT_SVG)
-    build_note_markdown(summary_rows, long_rows, meta, OUT_MD)
 
     print(f"[OK] summary csv: {OUT_CSV}")
     print(f"[OK] legacy csv : {LEGACY_OUT_CSV}")
     print(f"[OK] long csv   : {OUT_LONG_CSV}")
     print(f"[OK] plot svg   : {OUT_SVG}")
-    print(f"[OK] note md    : {OUT_MD}")
+    print(f"[OK] supplement source rows: {len(supplement_rows)}")
     print(f"[OK] source_user_count: {meta['source_user_count']}")
 
 

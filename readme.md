@@ -19,7 +19,7 @@
   黑名单 UID，用于过滤老粉或异常用户。
 
 - `分析结果/`
-  承接分析结果、三人阈值结果、SVG 图表和报告素材。
+  承接分析结果、三人阈值结果和 SVG 图表。
 
 ## 脚本
 
@@ -30,7 +30,7 @@
   根据 `场次明细表/all_live_details.csv` 生成用户长表、宽表，并应用黑名单清洗。
 
 - `build_conversion_report.py`
-  以 `乃琳_鸣潮` 为 source，生成后续承接 / 团内流动分析结果、cohort 表和报告素材。
+  以 `乃琳_鸣潮` 为 source，生成后续承接 / 团内流动分析结果和 cohort 表。
 
 - `plot_conversion_report.py`
   根据承接分析结果生成 SVG 图表。

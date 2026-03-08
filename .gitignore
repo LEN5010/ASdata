@@ -2,3 +2,5 @@ venv
 .mplconfig
 __pycache__
 .DS_Store
+
+场次明细表/all_live_details.csv

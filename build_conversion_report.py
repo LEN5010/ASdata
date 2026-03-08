@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 DETAIL_CSV = ROOT / "场次明细表" / "all_live_details.csv"
 BLACKLIST_CSV = ROOT / "黑名单" / "uid_blacklist.csv"
+SUPPLEMENT_SOURCE_CSV = ROOT / "KG补充名单" / "uid_live_stats.csv"
 LEGACY_OUTPUT_CSV = ROOT / "分析结果" / "conversion_report_乃琳鸣潮.csv"
 
 SOURCE_LIVE_FIXED = "乃琳_鸣潮"
@@ -67,6 +68,35 @@ def fmt_date(ts_ms):
 def load_detail_rows(csv_path: Path):
     with csv_path.open("r", encoding="utf-8-sig", newline="") as f:
         return list(csv.DictReader(f))
+
+
+def recalc_present_active(row):
+    danmu_count = safe_int(row.get("danmu_count"), 0)
+    gift_count = safe_int(row.get("gift_count"), 0)
+    gift_amount = safe_float(row.get("gift_amount"), 0.0)
+    is_present = 1 if (danmu_count > 0 or gift_count > 0 or gift_amount > 0) else safe_int(row.get("is_present"), 0)
+    is_active = 1 if (danmu_count >= 2 or gift_amount > 0) else 0
+    return is_present, is_active
+
+
+def load_source_supplement_rows(csv_path: Path, source_live: str):
+    if not csv_path.exists():
+        return []
+    source_host, source_type = source_live.split("_", 1)
+    rows = []
+    with csv_path.open("r", encoding="utf-8-sig", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            host = safe_str(row.get("host"))
+            live_type = safe_str(row.get("live_type"))
+            if host != source_host or live_type != source_type:
+                continue
+            cloned = dict(row)
+            is_present, is_active = recalc_present_active(cloned)
+            cloned["is_present"] = str(is_present)
+            cloned["is_active"] = str(is_active)
+            rows.append(cloned)
+    return rows
 
 
 def load_blacklist_uids(csv_path: Path):
@@ -577,79 +607,6 @@ def write_csv(rows, output_csv_path: Path, fieldnames=None):
         writer.writerows(rows)
 
 
-def build_report_markdown(source_live, analysis_result):
-    summary_rows = analysis_result["summary_rows"]
-    first_target_rows = analysis_result["first_target_rows"]
-    host_segment_rows = analysis_result["host_segment_rows"]
-    cohort_rows = analysis_result["cohort_overview_rows"]
-    profile_map = {row["metric"]: row["value"] for row in analysis_result["source_profile_rows"]}
-
-    top_post = summary_rows[:5]
-    top_first = [row for row in first_target_rows if row["first_target"] != "无后续非source目标"][:5]
-    top_overlap_gap = sorted(
-        summary_rows,
-        key=lambda x: x["overlap_ge1_rate"] - x["post_ge1_rate"],
-        reverse=True,
-    )[:3]
-    largest_cohort = max(cohort_rows, key=lambda x: x["cohort_user_count"], default=None)
-
-    lines = []
-    lines.append(f"# {source_live} 后续承接 / 团内流动报告素材")
-    lines.append("")
-    lines.append("## 口径说明")
-    lines.append("")
-    lines.append("- `overlap`：source 人群与目标直播的人群重合，不要求时间先后。")
-    lines.append("- `post_source`：只统计用户首次进入 source 之后，再去目标直播的行为。")
-    lines.append("- `first_target`：用户首次进入 source 之后，第一个去到的非 source 目标。")
-    lines.append("")
-    lines.append("## 样本概况")
-    lines.append("")
-    lines.append(f"- source：`{source_live}`")
-    lines.append(f"- source 用户数：`{analysis_result['source_user_count']}`")
-    lines.append(f"- 分析时间窗：`{fmt_date(analysis_result['analysis_start_ts'])}` ~ `{fmt_date(analysis_result['analysis_end_ts'])}`")
-    lines.append(f"- 窗口内首次观测即进入 source 的用户占比：`{profile_map.get('window_new_user_rate', 0)}`")
-    lines.append(f"- 首次进入 source 后至少去过 1 个非 source 目标的用户占比：`{profile_map.get('post_any_non_source_user_rate', 0)}`")
-    lines.append(f"- 首次进入 source 后去过嘉然直播的用户占比：`{profile_map.get('post_jiaran_user_rate', 0)}`")
-    lines.append(f"- 首次进入 source 后去过贝拉直播的用户占比：`{profile_map.get('post_bella_user_rate', 0)}`")
-    lines.append("")
-    lines.append("## 重点目标（按 post_source 覆盖率）")
-    lines.append("")
-    for idx, row in enumerate(top_post, start=1):
-        lines.append(
-            f"- Top{idx} `{row['target_live']}`：post>=1 `{row['post_ge1_user_count']}` / `{row['post_ge1_rate']}`，"
-            f"post>=2 `{row['post_ge2_user_count']}` / `{row['post_ge2_rate']}`，"
-            f"first_target `{row['first_target_user_count']}` / `{row['first_target_rate']}`"
-        )
-    lines.append("")
-    lines.append("## 首跳去向")
-    lines.append("")
-    for idx, row in enumerate(top_first, start=1):
-        lines.append(
-            f"- Top{idx} `{row['first_target']}`：首跳人数 `{row['user_count']}`，占 source `{row['user_rate']}`"
-        )
-    lines.append("")
-    lines.append("## 重合与后续承接的差值")
-    lines.append("")
-    for row in top_overlap_gap:
-        gap = round(row['overlap_ge1_rate'] - row['post_ge1_rate'], 4)
-        lines.append(
-            f"- `{row['target_live']}`：overlap `{row['overlap_ge1_rate']}` vs post `{row['post_ge1_rate']}`，差值 `{gap}`；"
-            f"其中仅发生在 source 之前的用户占比 `{row['pre_source_only_rate']}`"
-        )
-    lines.append("")
-    lines.append("## 团内流动分层")
-    lines.append("")
-    for row in host_segment_rows:
-        lines.append(f"- `{row['segment']}`：`{row['user_count']}` / `{row['user_rate']}`")
-    lines.append("")
-    lines.append("## 建议写作角度")
-    lines.append("")
-    lines.append("- 先写 source 人群规模与样本窗口，再区分 overlap 与 post_source 两套口径。")
-    lines.append("- 重点强调乃琳鸣潮对团内后续承接的方向：留在乃琳、流向嘉然、流向贝拉。")
-    lines.append("- 用 first_target 解释‘第一跳去了哪里’，再用 post>=2 / post>=3 补充沉淀深度。")
-    lines.append("- 如果要写扩展分析，再单独引用 cohort 表，不必放在主图主文里。")
-    lines.append("")
-    return "\n".join(lines)
 
 
 def main():
@@ -657,8 +614,10 @@ def main():
         raise FileNotFoundError(f"找不到场次明细: {DETAIL_CSV}")
 
     detail_rows = load_detail_rows(DETAIL_CSV)
+    supplement_rows = load_source_supplement_rows(SUPPLEMENT_SOURCE_CSV, SOURCE_LIVE_FIXED)
+    all_rows = detail_rows + supplement_rows
     blacklist_uids = load_blacklist_uids(BLACKLIST_CSV)
-    records, invalid_uid_count, blacklisted_count = build_records(detail_rows, blacklist_uids)
+    records, invalid_uid_count, blacklisted_count = build_records(all_rows, blacklist_uids)
     analysis_result = analyze_records(records, SOURCE_LIVE_FIXED, WINDOW_DAYS)
 
     ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
@@ -669,7 +628,6 @@ def main():
     cohort_target_csv = ANALYSIS_DIR / "03_cohort_by_target.csv"
     host_segment_csv = ANALYSIS_DIR / "04_host_flow_segments.csv"
     profile_csv = ANALYSIS_DIR / "05_source_profile.csv"
-    report_md = ANALYSIS_DIR / "报告素材_乃琳鸣潮.md"
 
     write_csv(analysis_result["cohort_overview_rows"], cohort_overview_csv)
     write_csv(analysis_result["summary_rows"], summary_csv)
@@ -678,10 +636,10 @@ def main():
     write_csv(analysis_result["cohort_target_rows"], cohort_target_csv)
     write_csv(analysis_result["host_segment_rows"], host_segment_csv)
     write_csv(analysis_result["source_profile_rows"], profile_csv)
-    report_md.write_text(build_report_markdown(SOURCE_LIVE_FIXED, analysis_result), encoding="utf-8")
 
     print(f"[OK] source 固定: {SOURCE_LIVE_FIXED}")
     print(f"[OK] 原始明细行数: {len(detail_rows)}")
+    print(f"[OK] 补充source行数: {len(supplement_rows)}")
     print(f"[OK] 黑名单过滤行数: {blacklisted_count}")
     print(f"[OK] 非法UID过滤行数: {invalid_uid_count}")
     print(f"[OK] 清洗后 user-session 行数: {len(records)}")
