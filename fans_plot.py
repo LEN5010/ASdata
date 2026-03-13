@@ -7,7 +7,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 DETAIL_CSV = ROOT / "场次明细表" / "all_live_details.csv"
 BLACKLIST_CSV = ROOT / "黑名单" / "uid_blacklist.csv"
-SUPPLEMENT_SOURCE_CSV = ROOT / "KG补充名单" / "uid_live_stats.csv"
 OUT_DIR = ROOT / "分析结果"
 
 SOURCE_LIVE = "乃琳_鸣潮"
@@ -44,34 +43,6 @@ def safe_int(v, default=0):
 def load_csv_rows(path: Path):
     with path.open("r", encoding="utf-8-sig", newline="") as f:
         return list(csv.DictReader(f))
-
-
-def recalc_present_active(row):
-    danmu_count = safe_int(row.get("danmu_count"), 0)
-    gift_count = safe_int(row.get("gift_count"), 0)
-    gift_amount = float(row.get("gift_amount") or 0) if str(row.get("gift_amount") or '').strip() else 0.0
-    is_present = 1 if (danmu_count > 0 or gift_count > 0 or gift_amount > 0) else safe_int(row.get("is_present"), 0)
-    is_active = 1 if (danmu_count >= 2 or gift_amount > 0) else 0
-    return is_present, is_active
-
-
-def load_source_supplement_rows(path: Path, source_live: str):
-    if not path.exists():
-        return []
-    source_host, source_type = source_live.split("_", 1)
-    rows = []
-    with path.open("r", encoding="utf-8-sig", newline="") as f:
-        for row in csv.DictReader(f):
-            host = safe_str(row.get("host"))
-            live_type = safe_str(row.get("live_type"))
-            if host != source_host or live_type != source_type:
-                continue
-            cloned = dict(row)
-            is_present, is_active = recalc_present_active(cloned)
-            cloned["is_present"] = str(is_present)
-            cloned["is_active"] = str(is_active)
-            rows.append(cloned)
-    return rows
 
 
 def load_blacklist(path: Path):
@@ -324,10 +295,9 @@ def build_threshold_svg(summary_rows, meta, out_svg: Path):
 
 def main():
     detail_rows = load_csv_rows(DETAIL_CSV)
-    supplement_rows = load_source_supplement_rows(SUPPLEMENT_SOURCE_CSV, SOURCE_LIVE)
     blacklist = load_blacklist(BLACKLIST_CSV)
 
-    summary_rows, long_rows, meta = build_stats(detail_rows + supplement_rows, blacklist, SOURCE_LIVE, HOSTS)
+    summary_rows, long_rows, meta = build_stats(detail_rows, blacklist, SOURCE_LIVE, HOSTS)
 
     write_csv(summary_rows, OUT_CSV)
     write_csv(summary_rows, LEGACY_OUT_CSV)
@@ -338,7 +308,6 @@ def main():
     print(f"[OK] legacy csv : {LEGACY_OUT_CSV}")
     print(f"[OK] long csv   : {OUT_LONG_CSV}")
     print(f"[OK] plot svg   : {OUT_SVG}")
-    print(f"[OK] supplement source rows: {len(supplement_rows)}")
     print(f"[OK] source_user_count: {meta['source_user_count']}")
 
 

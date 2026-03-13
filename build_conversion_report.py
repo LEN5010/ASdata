@@ -10,7 +10,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 DETAIL_CSV = ROOT / "场次明细表" / "all_live_details.csv"
 BLACKLIST_CSV = ROOT / "黑名单" / "uid_blacklist.csv"
-SUPPLEMENT_SOURCE_CSV = ROOT / "KG补充名单" / "uid_live_stats.csv"
 LEGACY_OUTPUT_CSV = ROOT / "分析结果" / "conversion_report_乃琳鸣潮.csv"
 
 SOURCE_LIVE_FIXED = "乃琳_鸣潮"
@@ -68,35 +67,6 @@ def fmt_date(ts_ms):
 def load_detail_rows(csv_path: Path):
     with csv_path.open("r", encoding="utf-8-sig", newline="") as f:
         return list(csv.DictReader(f))
-
-
-def recalc_present_active(row):
-    danmu_count = safe_int(row.get("danmu_count"), 0)
-    gift_count = safe_int(row.get("gift_count"), 0)
-    gift_amount = safe_float(row.get("gift_amount"), 0.0)
-    is_present = 1 if (danmu_count > 0 or gift_count > 0 or gift_amount > 0) else safe_int(row.get("is_present"), 0)
-    is_active = 1 if (danmu_count >= 2 or gift_amount > 0) else 0
-    return is_present, is_active
-
-
-def load_source_supplement_rows(csv_path: Path, source_live: str):
-    if not csv_path.exists():
-        return []
-    source_host, source_type = source_live.split("_", 1)
-    rows = []
-    with csv_path.open("r", encoding="utf-8-sig", newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            host = safe_str(row.get("host"))
-            live_type = safe_str(row.get("live_type"))
-            if host != source_host or live_type != source_type:
-                continue
-            cloned = dict(row)
-            is_present, is_active = recalc_present_active(cloned)
-            cloned["is_present"] = str(is_present)
-            cloned["is_active"] = str(is_active)
-            rows.append(cloned)
-    return rows
 
 
 def load_blacklist_uids(csv_path: Path):
@@ -345,6 +315,12 @@ def analyze_records(records, source_live, window_days):
             first_target_counter["无后续非source目标"] += 1
 
         post_hosts = {record["host"] for record in post_non_source_records}
+        continued_source_records = [
+            record for record in user_records
+            if record["target_live"] == source_live and record["session_ts"] > source_first_ts
+        ]
+        if continued_source_records:
+            post_hosts.add(source_host)
         if any(record["host"] == source_host for record in post_non_source_records):
             source_profile_counter["post_same_host_other_type_user"] += 1
         if any(record["host"] != source_host for record in post_non_source_records):
@@ -614,10 +590,8 @@ def main():
         raise FileNotFoundError(f"找不到场次明细: {DETAIL_CSV}")
 
     detail_rows = load_detail_rows(DETAIL_CSV)
-    supplement_rows = load_source_supplement_rows(SUPPLEMENT_SOURCE_CSV, SOURCE_LIVE_FIXED)
-    all_rows = detail_rows + supplement_rows
     blacklist_uids = load_blacklist_uids(BLACKLIST_CSV)
-    records, invalid_uid_count, blacklisted_count = build_records(all_rows, blacklist_uids)
+    records, invalid_uid_count, blacklisted_count = build_records(detail_rows, blacklist_uids)
     analysis_result = analyze_records(records, SOURCE_LIVE_FIXED, WINDOW_DAYS)
 
     ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
@@ -639,7 +613,6 @@ def main():
 
     print(f"[OK] source 固定: {SOURCE_LIVE_FIXED}")
     print(f"[OK] 原始明细行数: {len(detail_rows)}")
-    print(f"[OK] 补充source行数: {len(supplement_rows)}")
     print(f"[OK] 黑名单过滤行数: {blacklisted_count}")
     print(f"[OK] 非法UID过滤行数: {invalid_uid_count}")
     print(f"[OK] 清洗后 user-session 行数: {len(records)}")

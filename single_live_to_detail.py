@@ -8,6 +8,28 @@ ROOT = Path(__file__).resolve().parent
 JSON_ROOT = ROOT / "弹幕JSON"
 DETAIL_ROOT = ROOT / "场次明细表"
 DETAIL_JSON_ROOT = DETAIL_ROOT / "弹幕JSON"
+SUPPLEMENT_DETAIL_CSV = ROOT / "oldblacklist" / "as_output" / "uid_live_stats.csv"
+DETAIL_FIELDS = [
+    "uid",
+    "uname",
+    "host",
+    "live_type",
+    "sample_folder",
+    "live_name",
+    "live_id",
+    "room_id",
+    "channel_name",
+    "live_title",
+    "start_date",
+    "stop_date",
+    "danmu_count",
+    "gift_count",
+    "gift_amount",
+    "first_send_date",
+    "last_send_date",
+    "is_present",
+    "is_active",
+]
 
 
 def detect_host_and_type(folder_name: str, file_name: str, channel_name: str = "", live_title: str = ""):
@@ -37,6 +59,152 @@ def detect_host_and_type(folder_name: str, file_name: str, channel_name: str = "
         live_type = "电影"
 
     return host, live_type
+
+
+def safe_int(value, default=0):
+    try:
+        if value is None or value == "":
+            return default
+        return int(float(value))
+    except Exception:
+        return default
+
+
+def safe_float(value, default=0.0):
+    try:
+        if value is None or value == "":
+            return default
+        return float(value)
+    except Exception:
+        return default
+
+
+def safe_str(value):
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def recalc_present_active(row):
+    danmu_count = safe_int(row.get("danmu_count"), 0)
+    gift_count = safe_int(row.get("gift_count"), 0)
+    gift_amount = safe_float(row.get("gift_amount"), 0.0)
+    is_present = 1 if (danmu_count > 0 or gift_count > 0 or gift_amount > 0) else safe_int(row.get("is_present"), 0)
+    is_active = 1 if (danmu_count >= 2 or gift_amount > 0) else 0
+    return is_present, is_active
+
+
+def make_session_key(row):
+    return (
+        safe_str(row.get("live_id"))
+        or safe_str(row.get("live_name"))
+        or safe_str(row.get("start_date"))
+    )
+
+
+def normalize_detail_row(row, source_tag):
+    normalized = {field: row.get(field, "") for field in DETAIL_FIELDS}
+    normalized["uid"] = safe_str(normalized["uid"])
+    normalized["uname"] = safe_str(normalized["uname"])
+    normalized["host"] = safe_str(normalized["host"]) or "未知"
+    normalized["live_type"] = safe_str(normalized["live_type"]) or "其他"
+    normalized["sample_folder"] = safe_str(normalized["sample_folder"])
+    normalized["live_name"] = safe_str(normalized["live_name"])
+    normalized["live_id"] = safe_str(normalized["live_id"])
+    normalized["room_id"] = safe_str(normalized["room_id"])
+    normalized["channel_name"] = safe_str(normalized["channel_name"])
+    normalized["live_title"] = safe_str(normalized["live_title"])
+    normalized["start_date"] = safe_int(normalized["start_date"], 0)
+    normalized["stop_date"] = safe_int(normalized["stop_date"], 0)
+    normalized["danmu_count"] = safe_int(normalized["danmu_count"], 0)
+    normalized["gift_count"] = safe_int(normalized["gift_count"], 0)
+    normalized["gift_amount"] = round(safe_float(normalized["gift_amount"], 0.0), 4)
+    normalized["first_send_date"] = safe_int(normalized["first_send_date"], 0)
+    normalized["last_send_date"] = safe_int(normalized["last_send_date"], 0)
+    is_present, is_active = recalc_present_active(normalized)
+    normalized["is_present"] = is_present
+    normalized["is_active"] = is_active
+    normalized["_source_priority"] = 2 if source_tag == "json" else 1
+    return normalized
+
+
+def choose_nonempty_min(*values):
+    candidates = [value for value in values if value not in ("", 0, None)]
+    return min(candidates) if candidates else 0
+
+
+def choose_nonempty_max(*values):
+    candidates = [value for value in values if value not in ("", 0, None)]
+    return max(candidates) if candidates else 0
+
+
+def merge_duplicate_detail_rows(existing, new_row):
+    if new_row["_source_priority"] > existing["_source_priority"]:
+        preferred = dict(new_row)
+        fallback = existing
+    else:
+        preferred = dict(existing)
+        fallback = new_row
+
+    for field in ("uname", "sample_folder", "live_name", "live_id", "room_id", "channel_name", "live_title"):
+        if not preferred[field] and fallback[field]:
+            preferred[field] = fallback[field]
+
+    preferred["start_date"] = choose_nonempty_min(existing["start_date"], new_row["start_date"])
+    preferred["stop_date"] = choose_nonempty_max(existing["stop_date"], new_row["stop_date"])
+    preferred["first_send_date"] = choose_nonempty_min(existing["first_send_date"], new_row["first_send_date"])
+    preferred["last_send_date"] = choose_nonempty_max(existing["last_send_date"], new_row["last_send_date"])
+    preferred["danmu_count"] = max(existing["danmu_count"], new_row["danmu_count"])
+    preferred["gift_count"] = max(existing["gift_count"], new_row["gift_count"])
+    preferred["gift_amount"] = round(max(existing["gift_amount"], new_row["gift_amount"]), 4)
+    preferred["is_present"] = max(existing["is_present"], new_row["is_present"])
+    preferred["is_active"] = max(existing["is_active"], new_row["is_active"])
+    return preferred
+
+
+def merge_detail_rows(json_rows, supplement_rows):
+    dedup = {}
+
+    for source_tag, rows in (("supplement", supplement_rows), ("json", json_rows)):
+        for row in rows:
+            normalized = normalize_detail_row(row, source_tag)
+            session_key = make_session_key(normalized)
+            if not normalized["uid"] or not session_key:
+                continue
+
+            dedup_key = (
+                normalized["uid"],
+                normalized["host"],
+                normalized["live_type"],
+                session_key,
+            )
+            existing = dedup.get(dedup_key)
+            if existing is None:
+                dedup[dedup_key] = normalized
+            else:
+                dedup[dedup_key] = merge_duplicate_detail_rows(existing, normalized)
+
+    merged_rows = sorted(
+        (
+            {field: row[field] for field in DETAIL_FIELDS}
+            for row in dedup.values()
+        ),
+        key=lambda row: (
+            safe_int(row.get("start_date"), 0) or safe_int(row.get("first_send_date"), 0),
+            safe_str(row.get("host")),
+            safe_str(row.get("live_type")),
+            safe_str(row.get("live_name")),
+            safe_str(row.get("uid")),
+        ),
+    )
+    return merged_rows
+
+
+def load_supplement_rows(csv_path: Path):
+    if not csv_path.exists():
+        return []
+    with csv_path.open("r", encoding="utf-8-sig", newline="") as f:
+        return list(csv.DictReader(f))
 
 
 
@@ -131,32 +299,10 @@ def aggregate_one_live(json_path: Path):
 
 
 def write_detail_csv(rows, output_csv: Path):
-    fieldnames = [
-        "uid",
-        "uname",
-        "host",
-        "live_type",
-        "sample_folder",
-        "live_name",
-        "live_id",
-        "room_id",
-        "channel_name",
-        "live_title",
-        "start_date",
-        "stop_date",
-        "danmu_count",
-        "gift_count",
-        "gift_amount",
-        "first_send_date",
-        "last_send_date",
-        "is_present",
-        "is_active",
-    ]
-
     with output_csv.open("w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(f, fieldnames=DETAIL_FIELDS)
         writer.writeheader()
-        writer.writerows(rows)
+        writer.writerows([{field: row.get(field, "") for field in DETAIL_FIELDS} for row in rows])
 
 
 def batch_process(root_dir: str, output_dir: str = None, merged_output_csv: str | Path | None = None):
@@ -204,14 +350,21 @@ def batch_process(root_dir: str, output_dir: str = None, merged_output_csv: str 
             fail_count += 1
             print(f"[FAIL] {json_file} | 原因: {e}")
 
-    if all_rows:
-        write_detail_csv(all_rows, merged_csv)
+    supplement_rows = load_supplement_rows(SUPPLEMENT_DETAIL_CSV)
+    if supplement_rows:
+        print(f"[INFO] 载入补充明细: {SUPPLEMENT_DETAIL_CSV} | 行数: {len(supplement_rows)}")
+
+    merged_rows = merge_detail_rows(all_rows, supplement_rows)
+    if merged_rows:
+        write_detail_csv(merged_rows, merged_csv)
         print(f"[OK] 已生成总汇总表: {merged_csv}")
 
     print("--------------------------------------------------")
     print(f"[DONE] JSON 文件数: {len(json_files)}")
     print(f"[DONE] 成功: {success_count}")
     print(f"[DONE] 失败: {fail_count}")
+    print(f"[DONE] 补充明细行数: {len(supplement_rows)}")
+    print(f"[DONE] 合并后总行数: {len(merged_rows)}")
     print(f"[DONE] 输出目录: {out_root}")
 
 
