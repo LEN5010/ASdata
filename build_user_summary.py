@@ -1,6 +1,10 @@
 import csv
-from pathlib import Path
 from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
+
+from analysis_settings import SOURCE_LIVE_FIXED
+from user_tagging import build_user_tag_index
 
 
 ROOT = Path(__file__).resolve().parent
@@ -11,7 +15,7 @@ def safe_int(value, default=0):
         if value is None or value == "":
             return default
         return int(float(value))
-    except:
+    except Exception:
         return default
 
 
@@ -20,7 +24,7 @@ def safe_float(value, default=0.0):
         if value is None or value == "":
             return default
         return float(value)
-    except:
+    except Exception:
         return default
 
 
@@ -30,13 +34,20 @@ def safe_str(value):
     return str(value).strip()
 
 
+def is_valid_uid(uid):
+    uid = safe_str(uid)
+    return bool(uid) and uid.isdigit() and int(uid) > 0
+
+
+def fmt_date(ts_ms):
+    if not ts_ms:
+        return ""
+    return datetime.fromtimestamp(ts_ms / 1000).strftime("%Y-%m-%d %H:%M")
+
+
 def load_detail_csv(detail_csv_path: Path):
-    rows = []
     with detail_csv_path.open("r", encoding="utf-8-sig", newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            rows.append(row)
-    return rows
+        return list(csv.DictReader(f))
 
 
 def load_blacklist_uids(blacklist_csv_path: Path):
@@ -50,8 +61,40 @@ def load_blacklist_uids(blacklist_csv_path: Path):
     return uids
 
 
+def build_tag_records(detail_rows, blacklist_uids):
+    records = []
+    for row in detail_rows:
+        uid = safe_str(row.get("uid"))
+        if not is_valid_uid(uid) or uid in blacklist_uids:
+            continue
+
+        session_ts = (
+            safe_int(row.get("start_date"), 0)
+            or safe_int(row.get("first_send_date"), 0)
+            or safe_int(row.get("last_send_date"), 0)
+        )
+        if session_ts <= 0:
+            continue
+
+        host = safe_str(row.get("host")) or "未知"
+        live_type = safe_str(row.get("live_type")) or "其他"
+        session_key = (
+            safe_str(row.get("live_id"))
+            or safe_str(row.get("live_name"))
+            or str(session_ts)
+        )
+        records.append({
+            "uid": uid,
+            "target_live": f"{host}_{live_type}",
+            "session_key": session_key,
+            "session_ts": session_ts,
+        })
+    return records
+
+
 def build_user_summary(detail_rows, blacklist_uids=None):
     blacklist_uids = blacklist_uids or set()
+    tag_index = build_user_tag_index(build_tag_records(detail_rows, blacklist_uids), SOURCE_LIVE_FIXED)
 
     user_base = {}
     user_long_map = defaultdict(lambda: {
@@ -68,7 +111,7 @@ def build_user_summary(detail_rows, blacklist_uids=None):
 
     for row in detail_rows:
         uid = safe_str(row.get("uid"))
-        if not uid:
+        if not is_valid_uid(uid):
             continue
 
         if uid in blacklist_uids:
@@ -144,6 +187,7 @@ def build_user_summary(detail_rows, blacklist_uids=None):
 
     for (uid, host, live_type), stat in user_long_map.items():
         combo_keys.add((host, live_type))
+        tags = tag_index.get(uid, {})
         long_rows.append({
             "uid": uid,
             "uname": user_base[uid]["uname"],
@@ -156,13 +200,18 @@ def build_user_summary(detail_rows, blacklist_uids=None):
             "gift_total": round(stat["gift_total"], 4),
             "first_send_date": stat["first_send_date"],
             "last_send_date": stat["last_send_date"],
+            "是否510回旋用户": tags.get("is_510_return_user", 0),
+            "是否广义回旋用户": tags.get("is_broad_return_user", 0),
+            "是否纯新用户": tags.get("is_pure_new_user", 0),
         })
 
     long_rows.sort(key=lambda x: (x["uid"], x["host"], x["live_type"]))
     combo_keys = sorted(combo_keys, key=lambda x: (x[0], x[1]))
 
     wide_rows = []
+    user_tag_rows = []
     for uid, base in sorted(user_base.items(), key=lambda x: x[0]):
+        tags = tag_index.get(uid, {})
         row = {
             "uid": base["uid"],
             "uname": base["uname"],
@@ -176,6 +225,13 @@ def build_user_summary(detail_rows, blacklist_uids=None):
             "首次出现主播": base["first_seen_host"],
             "首次出现类型": base["first_seen_live_type"],
             "最后出现时间": base["last_seen_send_date"],
+            "是否510回旋用户": tags.get("is_510_return_user", 0),
+            "是否广义回旋用户": tags.get("is_broad_return_user", 0),
+            "是否纯新用户": tags.get("is_pure_new_user", 0),
+            "2025-12-09后首次出现时间": fmt_date(tags.get("first_post_return_ts", 0)),
+            "2025-12-09后首次出现直播": tags.get("first_post_return_target_live", ""),
+            "2025-12-09前最后出现时间": fmt_date(tags.get("last_pre_return_ts", 0)),
+            "2025-12-09前最后出现直播": tags.get("last_pre_return_target_live", ""),
         }
 
         for host, live_type in combo_keys:
@@ -187,6 +243,19 @@ def build_user_summary(detail_rows, blacklist_uids=None):
             row[f"{prefix}_礼物总额"] = 0.0
 
         wide_rows.append(row)
+        user_tag_rows.append({
+            "uid": base["uid"],
+            "uname": base["uname"],
+            "是否510回旋用户": tags.get("is_510_return_user", 0),
+            "是否广义回旋用户": tags.get("is_broad_return_user", 0),
+            "是否纯新用户": tags.get("is_pure_new_user", 0),
+            "首次出现时间": fmt_date(tags.get("first_seen_ts", 0)),
+            "首次出现直播": tags.get("first_seen_target_live", ""),
+            "2025-12-09前最后出现时间": fmt_date(tags.get("last_pre_return_ts", 0)),
+            "2025-12-09前最后出现直播": tags.get("last_pre_return_target_live", ""),
+            "2025-12-09后首次出现时间": fmt_date(tags.get("first_post_return_ts", 0)),
+            "2025-12-09后首次出现直播": tags.get("first_post_return_target_live", ""),
+        })
 
     wide_index = {row["uid"]: row for row in wide_rows}
 
@@ -202,7 +271,7 @@ def build_user_summary(detail_rows, blacklist_uids=None):
         wide_index[uid][f"{prefix}_礼物数"] = item["gift_count_total"]
         wide_index[uid][f"{prefix}_礼物总额"] = item["gift_total"]
 
-    return long_rows, wide_rows, combo_keys, filtered_detail_count
+    return long_rows, wide_rows, user_tag_rows, combo_keys, filtered_detail_count
 
 
 def write_csv(rows, output_csv: Path, fieldnames=None):
@@ -227,7 +296,6 @@ def main():
 
     print(f"[INFO] 读取明细表: {detail_csv}")
     detail_rows = load_detail_csv(detail_csv)
-
     if not detail_rows:
         print("[WARN] 明细表为空，结束")
         return
@@ -235,13 +303,14 @@ def main():
     print(f"[INFO] 读取黑名单: {blacklist_csv}")
     blacklist_uids = load_blacklist_uids(blacklist_csv)
 
-    long_rows, wide_rows, combo_keys, filtered_detail_count = build_user_summary(
+    long_rows, wide_rows, user_tag_rows, combo_keys, filtered_detail_count = build_user_summary(
         detail_rows,
         blacklist_uids=blacklist_uids,
     )
 
     long_csv = output_dir / "user_summary_long_clean.csv"
     wide_csv = output_dir / "user_summary_wide_clean.csv"
+    tag_csv = output_dir / "user_tags.csv"
 
     long_fields = [
         "uid",
@@ -255,6 +324,9 @@ def main():
         "gift_total",
         "first_send_date",
         "last_send_date",
+        "是否510回旋用户",
+        "是否广义回旋用户",
+        "是否纯新用户",
     ]
 
     base_fields = [
@@ -270,6 +342,13 @@ def main():
         "首次出现主播",
         "首次出现类型",
         "最后出现时间",
+        "是否510回旋用户",
+        "是否广义回旋用户",
+        "是否纯新用户",
+        "2025-12-09后首次出现时间",
+        "2025-12-09后首次出现直播",
+        "2025-12-09前最后出现时间",
+        "2025-12-09前最后出现直播",
     ]
 
     dynamic_fields = []
@@ -287,9 +366,11 @@ def main():
 
     write_csv(long_rows, long_csv, long_fields)
     write_csv(wide_rows, wide_csv, wide_fields)
+    write_csv(user_tag_rows, tag_csv)
 
     print(f"[OK] 已生成长表: {long_csv}")
     print(f"[OK] 已生成宽表: {wide_csv}")
+    print(f"[OK] 已生成标签表: {tag_csv}")
     print(f"[OK] 黑名单UID数: {len(blacklist_uids)}")
     print(f"[OK] 被过滤明细行数: {filtered_detail_count}")
     print(f"[OK] 清洗后用户数: {len(wide_rows)}")

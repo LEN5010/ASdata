@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import argparse
 import csv
 from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
+
+from analysis_settings import RETURN_START_MS, SOURCE_LIVE_FIXED
+from user_tagging import build_user_tag_index
 
 
 ROOT = Path(__file__).resolve().parent
 DETAIL_CSV = ROOT / "场次明细表" / "all_live_details.csv"
 BLACKLIST_CSV = ROOT / "黑名单" / "uid_blacklist.csv"
 LEGACY_OUTPUT_CSV = ROOT / "分析结果" / "conversion_report_乃琳鸣潮.csv"
-
-SOURCE_LIVE_FIXED = "乃琳_鸣潮"
 WINDOW_DAYS = (7, 14, 30)
 HOST_ORDER = ["乃琳", "嘉然", "贝拉"]
-ANALYSIS_DIR = ROOT / "分析结果" / f"{SOURCE_LIVE_FIXED}_后续承接分析"
+DEFAULT_ANALYSIS_DIR_NAME = f"{SOURCE_LIVE_FIXED}_后续承接分析"
 
 
 def safe_int(value, default=0):
@@ -185,14 +187,52 @@ def classify_host_segment(hosts):
     return mapping.get(ordered, "+".join(ordered) if ordered else "无后续到场")
 
 
-def analyze_records(records, source_live, window_days):
+def build_single_pass_exclusion_uids(records, source_live, session_key):
+    if not session_key:
+        return set()
+
+    records_by_uid = defaultdict(list)
+    for record in records:
+        if record["is_present"] >= 1:
+            records_by_uid[record["uid"]].append(record)
+
+    exclude_uids = set()
+    for uid, user_records in records_by_uid.items():
+        user_records = sorted(
+            user_records,
+            key=lambda x: (x["session_ts"], x["target_live"], x["session_key"]),
+        )
+        source_records = [record for record in user_records if record["target_live"] == source_live]
+        if not source_records:
+            continue
+
+        source_first = source_records[0]
+        if source_first["session_key"] != session_key:
+            continue
+        if len(source_records) != 1:
+            continue
+
+        source_anchor = (
+            source_first["session_ts"],
+            source_first["target_live"],
+            source_first["session_key"],
+        )
+        has_later_presence = any(
+            (record["session_ts"], record["target_live"], record["session_key"]) > source_anchor
+            for record in user_records
+        )
+        if not has_later_presence:
+            exclude_uids.add(uid)
+
+    return exclude_uids
+
+
+def analyze_records(records, source_live, window_days, user_tags):
     source_host, _ = source_live.split("_", 1)
     window_ms_map = {day: day * 24 * 3600 * 1000 for day in window_days}
 
     target_sessions = defaultdict(dict)
     records_by_uid = defaultdict(list)
-    first_seen_by_uid = {}
-    first_active_by_uid = {}
     all_targets = set()
 
     for record in records:
@@ -211,10 +251,6 @@ def analyze_records(records, source_live, window_days):
                 "session_ts": record["session_ts"],
             }
 
-        first_seen_by_uid[uid] = pick_earlier_record(first_seen_by_uid.get(uid), record)
-        if record["is_active"] >= 1:
-            first_active_by_uid[uid] = pick_earlier_record(first_active_by_uid.get(uid), record)
-
     source_users = set()
     source_first_by_uid = {}
     source_records_by_uid = defaultdict(list)
@@ -232,7 +268,11 @@ def analyze_records(records, source_live, window_days):
     if source_total == 0:
         raise ValueError(f"source 用户数为0或不存在: {source_live}")
 
-    targets = sorted(t for t in all_targets if t != source_live)
+    targets = sorted(
+        t for t in all_targets
+        if t != source_live
+        and any(meta["session_ts"] >= RETURN_START_MS for meta in target_sessions[t].values())
+    )
     summary_counter = {
         target: Counter({
             "overlap_ge1": 0,
@@ -258,14 +298,13 @@ def analyze_records(records, source_live, window_days):
     cohort_overview = {}
     cohort_target_counter = defaultdict(Counter)
 
-    analysis_start_ts = 0
+    analysis_start_ts = RETURN_START_MS
     analysis_end_ts = 0
     for target in target_sessions.values():
         for meta in target.values():
             ts = meta["session_ts"]
-            if not ts:
+            if not ts or ts < RETURN_START_MS:
                 continue
-            analysis_start_ts = ts if analysis_start_ts == 0 else min(analysis_start_ts, ts)
             analysis_end_ts = max(analysis_end_ts, ts)
 
     for uid in source_users:
@@ -276,15 +315,21 @@ def analyze_records(records, source_live, window_days):
         source_first = source_first_by_uid[uid]
         source_first_ts = source_first["session_ts"]
         source_first_name = source_first["live_name"]
-        first_seen = first_seen_by_uid.get(uid)
-
         source_present_sessions = [r for r in user_records if r["target_live"] == source_live]
         source_active_sessions = [r for r in source_present_sessions if r["is_active"] >= 1]
 
-        if first_seen and first_seen["target_live"] == source_live:
+        user_tag = user_tags.get(uid, {})
+
+        if user_tag.get("is_pure_new_user", 0):
             source_profile_counter["window_new_user"] += 1
         else:
             source_profile_counter["window_old_user"] += 1
+        if user_tag.get("is_510_return_user", 0):
+            source_profile_counter["spin510_user"] += 1
+        if user_tag.get("is_broad_return_user", 0):
+            source_profile_counter["broad_return_user"] += 1
+        if user_tag.get("is_pure_new_user", 0):
+            source_profile_counter["pure_new_user"] += 1
         if source_active_sessions:
             source_profile_counter["source_active_user"] += 1
         if len(source_present_sessions) >= 2:
@@ -344,19 +389,29 @@ def analyze_records(records, source_live, window_days):
                 "cohort_user_count": 0,
                 "window_new_user_count": 0,
                 "source_active_user_count": 0,
+                "spin510_user_count": 0,
+                "broad_return_user_count": 0,
+                "pure_new_user_count": 0,
             },
         )
         cohort_info["cohort_user_count"] += 1
-        if first_seen and first_seen["target_live"] == source_live:
+        if user_tag.get("is_pure_new_user", 0):
             cohort_info["window_new_user_count"] += 1
         if source_active_sessions:
             cohort_info["source_active_user_count"] += 1
+        if user_tag.get("is_510_return_user", 0):
+            cohort_info["spin510_user_count"] += 1
+        if user_tag.get("is_broad_return_user", 0):
+            cohort_info["broad_return_user_count"] += 1
+        if user_tag.get("is_pure_new_user", 0):
+            cohort_info["pure_new_user_count"] += 1
 
         for target in targets:
             target_records = per_target_records.get(target, [])
-            overlap_records = target_records
+            overlap_records = [r for r in target_records if r["session_ts"] >= RETURN_START_MS]
             pre_records = [r for r in target_records if r["session_ts"] < source_first_ts]
-            post_records = [r for r in target_records if r["session_ts"] > source_first_ts]
+            pre_records = [r for r in pre_records if r["session_ts"] >= RETURN_START_MS]
+            post_records = [r for r in target_records if r["session_ts"] > source_first_ts and r["session_ts"] >= RETURN_START_MS]
             overlap_active_records = [r for r in overlap_records if r["is_active"] >= 1]
             post_active_records = [r for r in post_records if r["is_active"] >= 1]
 
@@ -406,7 +461,10 @@ def analyze_records(records, source_live, window_days):
     summary_rows = []
     for target in targets:
         host, live_type = target.split("_", 1)
-        total_sessions = len(target_sessions[target])
+        total_sessions = sum(
+            1 for meta in target_sessions[target].values()
+            if meta["session_ts"] >= RETURN_START_MS
+        )
         counter = summary_counter[target]
         row = {
             "source_live": source_live,
@@ -491,6 +549,9 @@ def analyze_records(records, source_live, window_days):
     for row in cohort_overview_rows:
         row["window_new_user_rate"] = fmt_pct(row["window_new_user_count"], row["cohort_user_count"])
         row["source_active_user_rate"] = fmt_pct(row["source_active_user_count"], row["cohort_user_count"])
+        row["spin510_user_rate"] = fmt_pct(row["spin510_user_count"], row["cohort_user_count"])
+        row["broad_return_user_rate"] = fmt_pct(row["broad_return_user_count"], row["cohort_user_count"])
+        row["pure_new_user_rate"] = fmt_pct(row["pure_new_user_count"], row["cohort_user_count"])
 
     cohort_target_rows = []
     for cohort_row in cohort_overview_rows:
@@ -531,6 +592,12 @@ def analyze_records(records, source_live, window_days):
         ("window_new_user_rate", fmt_pct(source_profile_counter["window_new_user"], source_total), "当前窗口内首次观测即出现在 source 的占比"),
         ("window_old_user_count", source_profile_counter["window_old_user"], "当前窗口内在 source 之前已在别处观测到的用户数"),
         ("window_old_user_rate", fmt_pct(source_profile_counter["window_old_user"], source_total), "当前窗口内在 source 前已被观测到的占比"),
+        ("spin510_user_count", source_profile_counter["spin510_user"], "2022-06-02 到 2025-12-08 期间消失，并在 2025-12-09 之后回归的用户数"),
+        ("spin510_user_rate", fmt_pct(source_profile_counter["spin510_user"], source_total), "510回旋用户占比"),
+        ("broad_return_user_count", source_profile_counter["broad_return_user"], "2025-12-09 后出现前至少一年未参与弹幕的用户数"),
+        ("broad_return_user_rate", fmt_pct(source_profile_counter["broad_return_user"], source_total), "广义回旋用户占比"),
+        ("pure_new_user_count", source_profile_counter["pure_new_user"], "首次出现在 2025-12-09 之后且首次直播即 source 的纯新用户数"),
+        ("pure_new_user_rate", fmt_pct(source_profile_counter["pure_new_user"], source_total), "纯新用户占比"),
         ("source_active_user_count", source_profile_counter["source_active_user"], "在 source 至少有 1 场有效到场的用户数"),
         ("source_active_user_rate", fmt_pct(source_profile_counter["source_active_user"], source_total), "在 source 至少有 1 场有效到场的占比"),
         ("source_ge2_user_count", source_profile_counter["source_ge2_user"], "在 source 到场不少于 2 场的用户数"),
@@ -583,42 +650,81 @@ def write_csv(rows, output_csv_path: Path, fieldnames=None):
         writer.writerows(rows)
 
 
+def run_analysis(records, invalid_uid_count, blacklisted_count, analysis_dir: Path, legacy_output_csv=None):
+    user_tags = build_user_tag_index(records, SOURCE_LIVE_FIXED)
+    analysis_result = analyze_records(records, SOURCE_LIVE_FIXED, WINDOW_DAYS, user_tags)
 
+    analysis_dir.mkdir(parents=True, exist_ok=True)
 
-def main():
-    if not DETAIL_CSV.exists():
-        raise FileNotFoundError(f"找不到场次明细: {DETAIL_CSV}")
-
-    detail_rows = load_detail_rows(DETAIL_CSV)
-    blacklist_uids = load_blacklist_uids(BLACKLIST_CSV)
-    records, invalid_uid_count, blacklisted_count = build_records(detail_rows, blacklist_uids)
-    analysis_result = analyze_records(records, SOURCE_LIVE_FIXED, WINDOW_DAYS)
-
-    ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
-
-    cohort_overview_csv = ANALYSIS_DIR / "00_source_cohorts.csv"
-    summary_csv = ANALYSIS_DIR / "01_summary_by_target.csv"
-    first_target_csv = ANALYSIS_DIR / "02_first_target.csv"
-    cohort_target_csv = ANALYSIS_DIR / "03_cohort_by_target.csv"
-    host_segment_csv = ANALYSIS_DIR / "04_host_flow_segments.csv"
-    profile_csv = ANALYSIS_DIR / "05_source_profile.csv"
+    cohort_overview_csv = analysis_dir / "00_source_cohorts.csv"
+    summary_csv = analysis_dir / "01_summary_by_target.csv"
+    first_target_csv = analysis_dir / "02_first_target.csv"
+    cohort_target_csv = analysis_dir / "03_cohort_by_target.csv"
+    host_segment_csv = analysis_dir / "04_host_flow_segments.csv"
+    profile_csv = analysis_dir / "05_source_profile.csv"
 
     write_csv(analysis_result["cohort_overview_rows"], cohort_overview_csv)
     write_csv(analysis_result["summary_rows"], summary_csv)
-    write_csv(analysis_result["summary_rows"], LEGACY_OUTPUT_CSV)
+    if legacy_output_csv is not None:
+        write_csv(analysis_result["summary_rows"], legacy_output_csv)
     write_csv(analysis_result["first_target_rows"], first_target_csv)
     write_csv(analysis_result["cohort_target_rows"], cohort_target_csv)
     write_csv(analysis_result["host_segment_rows"], host_segment_csv)
     write_csv(analysis_result["source_profile_rows"], profile_csv)
 
     print(f"[OK] source 固定: {SOURCE_LIVE_FIXED}")
-    print(f"[OK] 原始明细行数: {len(detail_rows)}")
     print(f"[OK] 黑名单过滤行数: {blacklisted_count}")
     print(f"[OK] 非法UID过滤行数: {invalid_uid_count}")
     print(f"[OK] 清洗后 user-session 行数: {len(records)}")
     print(f"[OK] source 用户数: {analysis_result['source_user_count']}")
-    print(f"[OK] 输出目录: {ANALYSIS_DIR}")
-    print(f"[OK] 兼容旧报表: {LEGACY_OUTPUT_CSV}")
+    print(f"[OK] 输出目录: {analysis_dir}")
+    if legacy_output_csv is not None:
+        print(f"[OK] 兼容旧报表: {legacy_output_csv}")
+
+
+
+
+def main():
+    parser = argparse.ArgumentParser(description="生成乃琳鸣潮后续承接分析报表")
+    parser.add_argument(
+        "--analysis-dir-name",
+        default=DEFAULT_ANALYSIS_DIR_NAME,
+        help="输出到 分析结果/ 下的目录名",
+    )
+    parser.add_argument(
+        "--exclude-source-single-pass-session-key",
+        default="",
+        help="排除首次 source 即命中该 session_key、且之后再未出现的用户",
+    )
+    parser.add_argument(
+        "--no-legacy-output",
+        action="store_true",
+        help="不写兼容旧版的 conversion_report_乃琳鸣潮.csv",
+    )
+    args = parser.parse_args()
+
+    if not DETAIL_CSV.exists():
+        raise FileNotFoundError(f"找不到场次明细: {DETAIL_CSV}")
+
+    detail_rows = load_detail_rows(DETAIL_CSV)
+    blacklist_uids = load_blacklist_uids(BLACKLIST_CSV)
+    records, invalid_uid_count, blacklisted_count = build_records(detail_rows, blacklist_uids)
+    print(f"[OK] 原始明细行数: {len(detail_rows)}")
+    if args.exclude_source_single_pass_session_key:
+        exclude_uids = build_single_pass_exclusion_uids(
+            records,
+            SOURCE_LIVE_FIXED,
+            args.exclude_source_single_pass_session_key,
+        )
+        records = [record for record in records if record["uid"] not in exclude_uids]
+        print(
+            "[OK] 已排除指定场次单次且无后续用户数:"
+            f" {len(exclude_uids)} | session_key={args.exclude_source_single_pass_session_key}"
+        )
+
+    analysis_dir = ROOT / "分析结果" / args.analysis_dir_name
+    legacy_output_csv = None if args.no_legacy_output else LEGACY_OUTPUT_CSV
+    run_analysis(records, invalid_uid_count, blacklisted_count, analysis_dir, legacy_output_csv)
 
 
 if __name__ == "__main__":

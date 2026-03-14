@@ -3,5 +3,7 @@ venv
 __pycache__
 .DS_Store
 场次明细表/all_live_details.csv
-
-场次明细表/all_live_details.csv
+场次明细表/弹幕JSON/
+场次明细表/XML弹幕文件/
+用户总表/
+黑名单/uid_blacklist.csv
