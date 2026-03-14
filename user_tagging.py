@@ -1,7 +1,6 @@
 from collections import defaultdict
 
 from analysis_settings import (
-    BROAD_RETURN_GAP_MS,
     RETURN_START_MS,
     SOURCE_LIVE_FIXED,
     SPIN510_HISTORY_END_MS,
@@ -52,14 +51,7 @@ def build_user_tag_index(records, source_live=SOURCE_LIVE_FIXED):
         is_510_return_user = int(
             bool(first_post_return and has_pre_510_history and not has_mid_activity)
         )
-        is_broad_return_user = int(
-            bool(
-                first_post_return
-                and last_pre_return
-                and int(last_pre_return.get("session_ts", 0) or 0)
-                <= int(first_post_return.get("session_ts", 0) or 0) - BROAD_RETURN_GAP_MS
-            )
-        )
+        is_broad_return_user = int(bool(first_post_return and last_pre_return))
         is_pure_new_user = int(
             int(first_record.get("session_ts", 0) or 0) >= RETURN_START_MS
             and str(first_record.get("target_live", "")) == source_live

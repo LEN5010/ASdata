@@ -1,0 +1,4 @@
+﻿threshold,segment,definition,user_count,user_rate_in_kg
+3,核心kg_ge3,kg 用户在首次进入 乃琳_鸣潮 后，累计在 A-SOUL 任意直播有效到场>=3,27472,0.2766
+5,核心kg_ge5,kg 用户在首次进入 乃琳_鸣潮 后，累计在 A-SOUL 任意直播有效到场>=5,17997,0.1812
+7,核心kg_ge7,kg 用户在首次进入 乃琳_鸣潮 后，累计在 A-SOUL 任意直播有效到场>=7,13375,0.1347

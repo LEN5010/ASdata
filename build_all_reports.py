@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent
-FILTERED_ANALYSIS_DIR_NAME = "乃琳_鸣潮_后续承接分析_去0211单次且无后续"
+FILTERED_VARIANT = "去0211单次且无后续"
 FILTERED_SESSION_KEY = "32d14305-7ef3-4b90-b261-8d68e754b6b3"
 
 
@@ -16,10 +16,10 @@ def run_step(title, command):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="一键生成统一明细、黑名单、用户总表、承接报表和图表")
-    parser.add_argument("--skip-blacklist", action="store_true", help="跳过黑名单重算")
+    parser = argparse.ArgumentParser(description="一键生成统一明细、黑名单、用户总表和精简后的核心分析报告")
+    parser.add_argument("--skip-blacklist", action="store_true", help="跳过 build_uid_blacklist.py")
     parser.add_argument("--skip-user-summary", action="store_true", help="跳过 build_user_summary.py")
-    parser.add_argument("--skip-fans", action="store_true", help="跳过 fans_plot.py")
+    parser.add_argument("--archive-legacy", action="store_true", help="把旧版分析结果移动到 分析结果/legacy/")
     args = parser.parse_args()
 
     python_exe = sys.executable or "python3"
@@ -32,34 +32,23 @@ def main():
     if not args.skip_user_summary:
         run_step("生成用户总表", [python_exe, "build_user_summary.py"])
 
-    run_step("生成承接分析报表", [python_exe, "build_conversion_report.py"])
-    run_step("生成承接分析图表", [python_exe, "plot_conversion_report.py"])
+    report_cmd = [python_exe, "-m", "reports.build_report", "--variant-name", "默认版"]
+    if args.archive_legacy:
+        report_cmd.append("--archive-legacy")
+    run_step("生成核心报告（默认版）", report_cmd)
+
     run_step(
-        "生成承接分析报表（去0211单次且无后续）",
+        "生成核心报告（去0211单次且无后续）",
         [
             python_exe,
-            "build_conversion_report.py",
-            "--analysis-dir-name",
-            FILTERED_ANALYSIS_DIR_NAME,
+            "-m",
+            "reports.build_report",
+            "--variant-name",
+            FILTERED_VARIANT,
             "--exclude-source-single-pass-session-key",
             FILTERED_SESSION_KEY,
-            "--no-legacy-output",
         ],
     )
-    run_step(
-        "生成承接分析图表（去0211单次且无后续）",
-        [
-            python_exe,
-            "plot_conversion_report.py",
-            "--analysis-dir-name",
-            FILTERED_ANALYSIS_DIR_NAME,
-            "--page-title",
-            FILTERED_ANALYSIS_DIR_NAME,
-        ],
-    )
-
-    if not args.skip_fans:
-        run_step("生成三人阈值图表", [python_exe, "fans_plot.py"])
 
     print("[DONE] 全流程已完成")
 
